@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  backend-test:
+    build: .
+    environment:
+      - FLASK_ENV=testing
+      - FLASK_DEBUG=False
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - SECRET_KEY=test-secret-key
+      - DATABASE_URL=sqlite:///test_interview_trainer.db
+      - OPENAI_API_KEY=test-key
+      - OPENAI_MODEL=gpt-3.5-turbo
+      - CORS_ORIGINS=http://localhost:3000
+      - LOG_LEVEL=DEBUG
+      - TESTING=True
+    volumes:
+      - .:/app
+    command: ["python", "-m", "pytest", "-v", "--tb=short"]
+    networks:
+      - interview-trainer-test
+
+networks:
+  interview-trainer-test:
+    driver: bridge
