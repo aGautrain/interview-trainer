@@ -7,14 +7,29 @@ A fullstack application that helps users prepare for job interviews by analyzing
 ## Architecture
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Backend**: Python Flask + SQLAlchemy
-- **Database**: SQLite (local development)
+- **Backend**: Python Flask + SQLAlchemy (containerized with Docker)
+- **Database**: SQLite (local development, containerized)
 - **LLM Integration**: OpenAI API (configurable for other providers)
 - **Styling**: Tailwind CSS + Headless UI components
+- **Containerization**: Docker + Docker Compose for development and testing
 
 ## Phase 1: Project Setup & Foundation
 
 ### 1.1 Backend Setup
+
+**Option 1: Docker (Recommended)**
+
+```bash
+# Using Docker Compose for development
+cd backend
+docker-compose up --build
+
+# Or run individual services
+docker-compose up db
+docker-compose up app
+```
+
+**Option 2: Local Development**
 
 ```bash
 # Create virtual environment
@@ -22,8 +37,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-pip install flask flask-sqlalchemy flask-cors python-dotenv openai requests pytest pytest-flask pytest-cov
-pip freeze > requirements.txt
+pip install -r requirements.txt
 ```
 
 **Key Libraries:**
@@ -35,6 +49,13 @@ pip freeze > requirements.txt
 - `openai`: OpenAI API client
 - `requests`: HTTP library for API calls
 - `pytest`: Testing framework
+
+**Docker Configuration:**
+
+- `Dockerfile`: Multi-stage build for production and development
+- `docker-compose.yml`: Development environment with hot reload
+- `docker-compose.test.yml`: Isolated testing environment
+- `docker-compose.prod.yml`: Production deployment configuration
 
 ### 1.2 Frontend Setup
 
@@ -80,6 +101,9 @@ interview-trainer/
 │   │   └── test_services.py
 │   ├── config.py
 │   ├── requirements.txt
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   ├── docker-compose.test.yml
 │   └── run.py
 ├── frontend/
 │   ├── src/
@@ -141,13 +165,18 @@ GET /api/history
 
 ### 2.4 Testing Strategy
 
+**Docker-based Testing (Recommended):**
+
 ```bash
-# Run backend tests
+# Run tests in isolated Docker environment
 cd backend
-pytest tests/ -v --cov=app
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+# Run specific test suites
+docker-compose -f docker-compose.test.yml run --rm app pytest tests/ -v --cov=app
 
 # Test coverage report
-pytest tests/ --cov=app --cov-report=html
+docker-compose -f docker-compose.test.yml run --rm app pytest tests/ --cov=app --cov-report=html
 ```
 
 **Test Coverage Goals:**

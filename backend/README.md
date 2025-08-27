@@ -12,12 +12,12 @@ This is the Flask backend for the Interview Trainer application, providing a RES
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Flask 2.3.3 (Dockerized)
+- **Framework**: Flask 3.1.2
 - **Database**: SQLAlchemy + SQLite
 - **LLM Integration**: OpenAI API
 - **Testing**: pytest with coverage
 - **Development**: Docker, Docker Compose, Flask-Migrate
-- **Containerization**: Python 3.11 slim image
+- **Containerization**: Python 3.12 slim image
 
 ## 📋 Prerequisites
 
@@ -78,6 +78,28 @@ The API will be available at `http://127.0.0.1:5000`
 
 ## 🐳 Docker Management
 
+### Using Docker Compose (Recommended)
+
+```bash
+# Build image
+docker-compose build
+
+# Start service
+docker-compose up -d
+
+# Run tests
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+
+# View logs
+docker-compose logs -f backend
+
+# Stop service
+docker-compose down
+
+# Clean up
+docker-compose down -v --rmi all
+```
+
 ### Using PowerShell Script (Windows)
 
 ```powershell
@@ -120,28 +142,6 @@ make logs
 
 # Stop service
 make stop
-```
-
-### Using Docker Compose Directly
-
-```bash
-# Build image
-docker-compose build
-
-# Start service
-docker-compose up -d
-
-# Run tests
-docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
-
-# View logs
-docker-compose logs -f backend
-
-# Stop service
-docker-compose down
-
-# Clean up
-docker-compose down -v --rmi all
 ```
 
 ## 🔧 Configuration
