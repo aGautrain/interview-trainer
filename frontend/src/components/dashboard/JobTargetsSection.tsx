@@ -1,4 +1,5 @@
 import { ArrowDownTrayIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useNavigate } from "react-router-dom";
 import JobCard from "./JobCard";
 
 import { Job } from "../../types/dashboard";
@@ -8,6 +9,8 @@ interface JobTargetsSectionProps {
 }
 
 const JobTargetsSection = ({ jobs }: JobTargetsSectionProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-6">
@@ -22,7 +25,10 @@ const JobTargetsSection = ({ jobs }: JobTargetsSectionProps) => {
             <ArrowDownTrayIcon className="w-4 h-4" />
             <span>Export to CSV</span>
           </button>
-          <button className="btn-primary flex items-center space-x-2">
+          <button
+            onClick={() => navigate("/job-targeting")}
+            className="btn-primary flex items-center space-x-2"
+          >
             <PlusIcon className="w-4 h-4" />
             <span>Target New Job</span>
           </button>

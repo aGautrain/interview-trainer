@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
+import JobTargeting from "./pages/JobTargeting";
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/job-targeting" element={<JobTargeting />} />
 
         <Route
           path="/analyze"
