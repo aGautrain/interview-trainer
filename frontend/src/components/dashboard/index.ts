@@ -7,3 +7,4 @@ export { default as SkillDistributionChart } from "./SkillDistributionChart";
 export { default as PerformanceChart } from "./PerformanceChart";
 export { default as StatsSection } from "./StatsSection";
 export { default as ChartsSection } from "./ChartsSection";
+export { default as ProgressSection } from "./ProgressSection";
