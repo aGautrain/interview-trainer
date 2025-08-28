@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import HomePage from "./pages/HomePage";
 import JobTargeting from "./pages/JobTargeting";
+import JobTraining from "./pages/JobTraining";
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/job-targeting" element={<JobTargeting />} />
+        <Route path="/job-training" element={<JobTraining />} />
 
         <Route
           path="/analyze"
