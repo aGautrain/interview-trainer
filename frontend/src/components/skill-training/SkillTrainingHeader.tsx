@@ -1,5 +1,6 @@
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { SkillCard } from "../../types";
 import { useNavigate } from "react-router-dom";
-import { SkillCard } from "../../types/job-training";
 
 interface SkillTrainingHeaderProps {
   skill: SkillCard;

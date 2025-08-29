@@ -1,4 +1,6 @@
-// Skill type enum for categorizing different types of skills
+// Job training types - Updated to match backend schemas
+// Note: These types are now also exported from the main types file
+
 export enum SkillType {
   PROGRAMMING = "programming",
   FRAMEWORK = "framework",
@@ -24,21 +26,38 @@ export interface SkillCard {
 export interface Question {
   id: string;
   text: string;
-  type: "theoretical" | "practical";
-  difficulty: "easy" | "medium" | "hard";
+  type:
+    | "theoretical"
+    | "practical"
+    | "behavioral"
+    | "technical"
+    | "situational"
+    | "coding"
+    | "system_design";
+  difficulty: "beginner" | "intermediate" | "advanced";
   category: string;
-  answer?: string;
+  skills: any[];
+  sampleAnswer?: string;
+  tips?: string[];
   isCompleted: boolean;
+  createdAt: string;
 }
 
 export interface Exercise {
   id: string;
   title: string;
   description: string;
-  difficulty: "easy" | "medium" | "hard";
+  difficulty: "beginner" | "intermediate" | "advanced";
   category: string;
+  programmingLanguage?: string;
+  skills: any[];
+  requirements?: string[];
   code?: string;
+  solution?: string;
+  hints?: string[];
+  timeLimit?: number;
   isCompleted: boolean;
+  createdAt: string;
 }
 
 export interface SkillTrainingData {

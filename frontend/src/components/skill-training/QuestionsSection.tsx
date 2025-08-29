@@ -1,4 +1,4 @@
-import { Question } from "../../types/job-training";
+import { Question } from "../../types";
 import QuestionCard from "./QuestionCard";
 
 interface QuestionsSectionProps {

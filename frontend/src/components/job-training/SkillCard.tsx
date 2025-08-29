@@ -1,4 +1,4 @@
-import { SkillCard as SkillCardType } from "../../types/job-training";
+import { SkillCard as SkillCardType } from "../../types";
 
 interface SkillCardProps {
   skill: SkillCardType;

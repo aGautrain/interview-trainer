@@ -11,11 +11,18 @@ export const placeholderJob: Job = {
   id: "placeholder",
   title: "Select a Job to Train For",
   company: "Choose from your job targets",
-  salaryRange: "Not specified",
-  location: "Not specified",
+  description: "Select a job from your dashboard to start training",
+  requirements: ["Select a job first"],
+  skills: ["Select a job first"],
   techStack: ["Select a job first"],
-  progress: 0,
+  location: "Not specified",
+  type: "Not specified",
+  level: "Not specified",
+  salaryRange: "Not specified",
   isRemote: false,
+  progress: 0,
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 };
 
 // Sample skills data

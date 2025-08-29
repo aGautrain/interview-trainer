@@ -1,9 +1,10 @@
-import { Exercise } from "../../types/job-training";
+import { Exercise } from "../../types";
 import ExerciseCard from "./ExerciseCard";
 
 interface ExercisesSectionProps {
   exercises: Exercise[];
   currentExerciseIndex: number;
+  onResetExercise: () => void;
   onSubmitExercise: () => void;
   onPreviousExercise: () => void;
 }
@@ -11,6 +12,7 @@ interface ExercisesSectionProps {
 const ExercisesSection = ({
   exercises,
   currentExerciseIndex,
+  onResetExercise,
   onSubmitExercise,
   onPreviousExercise,
 }: ExercisesSectionProps) => {
@@ -25,6 +27,7 @@ const ExercisesSection = ({
       exercise={currentExercise}
       currentIndex={currentExerciseIndex}
       totalCount={exercises.length}
+      onReset={onResetExercise}
       onSubmit={onSubmitExercise}
       onPrevious={onPreviousExercise}
     />

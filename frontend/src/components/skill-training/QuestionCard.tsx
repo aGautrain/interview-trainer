@@ -1,5 +1,5 @@
 import { CheckIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { Question } from "../../types/job-training";
+import { Question } from "../../types";
 import ProgressBar from "./ProgressBar";
 
 interface QuestionCardProps {
@@ -19,11 +19,11 @@ const QuestionCard = ({
 }: QuestionCardProps) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy":
+      case "beginner":
         return "bg-green-100 text-green-800";
-      case "medium":
+      case "intermediate":
         return "bg-yellow-100 text-yellow-800";
-      case "hard":
+      case "advanced":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -69,7 +69,7 @@ const QuestionCard = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 resize-none"
             rows={6}
             placeholder="Type your answer here..."
-            defaultValue={question.answer || ""}
+            defaultValue={question.sampleAnswer || ""}
           />
         </div>
 

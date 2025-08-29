@@ -139,7 +139,6 @@ const SkillTraining = () => {
           <QuestionsSection
             questions={questions}
             currentQuestionIndex={currentQuestionIndex}
-            onResetQuestion={handleResetQuestion}
             onSubmitAnswer={handleSubmitAnswer}
             onPreviousQuestion={handlePreviousQuestion}
           />

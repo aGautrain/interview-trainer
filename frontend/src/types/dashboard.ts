@@ -1,12 +1,22 @@
+// Dashboard types - Updated to match backend schemas
+// Note: These types are now also exported from the main types file
+
 export interface Job {
   id: string;
   title: string;
   company: string;
-  salaryRange: string;
-  location: string;
+  description: string;
+  requirements: string[];
+  skills: string[];
   techStack: string[];
-  progress: number;
+  location: string;
+  type: string;
+  level: string;
+  salaryRange?: string;
   isRemote: boolean;
+  progress?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface DashboardStats {
@@ -26,4 +36,11 @@ export interface PerformanceData {
   difficulty: string;
   success: number;
   failure: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  jobs: Job[];
+  skillDistributionData: SkillDistributionData[];
+  performanceData: PerformanceData[];
 }
