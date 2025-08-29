@@ -4,6 +4,7 @@ import HomePage from "./pages/HomePage";
 import JobTargeting from "./pages/JobTargeting";
 import JobTraining from "./pages/JobTraining";
 import SkillTraining from "./pages/SkillTraining";
+import DebugButton from "./components/DebugButton";
 
 function App() {
   return (
@@ -29,6 +30,9 @@ function App() {
         />
         <Route path="/history" element={<div>History (Coming Soon)</div>} />
       </Routes>
+
+      {/* Global debug button */}
+      <DebugButton />
     </div>
   );
 }

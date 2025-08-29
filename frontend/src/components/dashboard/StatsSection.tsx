@@ -3,6 +3,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { memo } from "react";
 import StatCard from "./StatCard";
 
 import { DashboardStats } from "../../types/dashboard";
@@ -11,7 +12,7 @@ interface StatsSectionProps {
   stats: DashboardStats;
 }
 
-const StatsSection = ({ stats }: StatsSectionProps) => {
+const StatsSection = memo(({ stats }: StatsSectionProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <StatCard
@@ -44,6 +45,8 @@ const StatsSection = ({ stats }: StatsSectionProps) => {
       />
     </div>
   );
-};
+});
+
+StatsSection.displayName = "StatsSection";
 
 export default StatsSection;
