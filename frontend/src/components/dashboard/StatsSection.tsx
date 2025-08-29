@@ -29,14 +29,18 @@ const StatsSection = ({ stats }: StatsSectionProps) => {
       <StatCard
         icon={ClockIcon}
         title="Avg Progress"
-        value={`${stats.avgProgress}%`}
+        value={stats.avgProgress}
         color="#f59e0b"
+        animateValue={true}
+        isPercentage={true}
       />
       <StatCard
         icon={ClockIcon}
         title="Success Rate"
-        value={`${stats.successRate}%`}
+        value={stats.successRate}
         color="#8b5cf6"
+        animateValue={true}
+        isPercentage={true}
       />
     </div>
   );

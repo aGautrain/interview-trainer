@@ -1,4 +1,8 @@
-import { MapPinIcon, CodeBracketIcon } from "@heroicons/react/24/outline";
+import {
+  MapPinIcon,
+  CodeBracketIcon,
+  PlayIcon,
+} from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
 import { Job } from "../../types/dashboard";
@@ -32,9 +36,9 @@ const JobCard = ({ job }: JobCardProps) => {
         </div>
         <button
           onClick={handlePractice}
-          className="btn-primary text-sm px-4 py-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-3 transition-colors duration-200 flex items-center justify-center"
         >
-          Practice →
+          <PlayIcon className="w-5 h-5" />
         </button>
       </div>
 

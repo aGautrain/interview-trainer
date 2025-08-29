@@ -35,26 +35,34 @@ const ProgressSection = ({
       <StatCard
         icon={CheckCircleIcon}
         title="Questions Completed"
-        value={`${questionsCompleted}/${questionsTotal}`}
+        value={questionsCompleted}
         color="#10b981"
+        animateValue={true}
+        formatValue={(value) => `${value}/${questionsTotal}`}
       />
       <StatCard
         icon={CodeBracketIcon}
         title="Coding Exercises"
-        value={`${exercisesCompleted}/${exercisesTotal}`}
+        value={exercisesCompleted}
         color="#3b82f6"
+        animateValue={true}
+        formatValue={(value) => `${value}/${exercisesTotal}`}
       />
       <StatCard
         icon={AcademicCapIcon}
         title="Skills Completed"
-        value={`${skillsCompleted}/${skillsTotal}`}
+        value={skillsCompleted}
         color="#f59e0b"
+        animateValue={true}
+        formatValue={(value) => `${value}/${skillsTotal}`}
       />
       <StatCard
         icon={ChartBarIcon}
         title="Overall Progress"
-        value={`${calculateOverallProgress()}%`}
-        color="#8b5cf6"
+        value={calculateOverallProgress()}
+        color="#8b2cf6"
+        animateValue={true}
+        isPercentage={true}
       />
     </div>
   );
