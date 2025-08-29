@@ -51,6 +51,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             >
               Job Training
             </Link>
+            <Link
+              to="/skill-training"
+              className={`pb-2 font-medium transition-colors ${
+                location.pathname === "/skill-training"
+                  ? "text-primary-600 border-b-2 border-primary-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              Skill Training
+            </Link>
           </nav>
         </div>
       </header>

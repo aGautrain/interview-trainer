@@ -9,6 +9,8 @@ import {
   PlaceholderOverlay,
   placeholderJob,
   sampleSkills,
+  getSampleQuestions,
+  getSampleExercises,
 } from "../components/job-training";
 import { SkillCard as SkillCardType } from "../types/job-training";
 import { Job } from "../types/dashboard";
@@ -16,20 +18,29 @@ import { Job } from "../types/dashboard";
 const JobTraining = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job>(placeholderJob);
   const [isPlaceholderMode, setIsPlaceholderMode] = useState(true);
   const [skills] = useState<SkillCardType[]>(sampleSkills);
 
   useEffect(() => {
     const jobFromState = location.state?.selectedJob;
+    const fromSkillTraining = location.state?.fromSkillTraining;
+
     if (jobFromState) {
       setSelectedJob(jobFromState);
       setIsPlaceholderMode(false);
+    } else if (fromSkillTraining) {
+      // Coming from skill training but no job state - this shouldn't happen
+      // but we'll handle it gracefully by going to dashboard
+      navigate("/");
+      return;
     } else {
       setSelectedJob(placeholderJob);
       setIsPlaceholderMode(true);
     }
-  }, [location.state]);
+    setIsLoading(false);
+  }, [location.state, navigate]);
 
   const handleSelectJob = () => {
     navigate("/");
@@ -40,8 +51,20 @@ const JobTraining = () => {
   };
 
   const handleSkillClick = (skill: SkillCardType) => {
-    // Handle skill click - could open practice mode, etc.
-    console.log("Skill clicked:", skill.name);
+    // Navigate to skill training page with sample data
+    const questions = getSampleQuestions(skill.name);
+    const exercises = getSampleExercises(skill.name);
+
+    navigate("/skill-training", {
+      state: {
+        skillData: {
+          skill,
+          questions,
+          exercises,
+        },
+        selectedJob: selectedJob, // Pass the current job state
+      },
+    });
   };
 
   return (
@@ -98,7 +121,7 @@ const JobTraining = () => {
       />
 
       <PlaceholderOverlay
-        isVisible={isPlaceholderMode}
+        isVisible={!isLoading && isPlaceholderMode}
         onSelectJob={handleSelectJob}
         onCreateJob={handleCreateJob}
       />
