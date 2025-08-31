@@ -14,7 +14,8 @@ from database import init_db, close_db
 from routes import (
     dashboard_router,
     jobs_router,
-    skills_router
+    skills_router,
+    job_analysis_router
 )
 
 
@@ -53,6 +54,7 @@ app.add_middleware(
 app.include_router(dashboard_router)
 app.include_router(jobs_router)
 app.include_router(skills_router)
+app.include_router(job_analysis_router)
 
 # Root endpoint
 @app.get("/")

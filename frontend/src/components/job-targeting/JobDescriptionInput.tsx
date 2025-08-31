@@ -4,12 +4,14 @@ interface JobDescriptionInputProps {
   jobDescription: string;
   onJobDescriptionChange: (value: string) => void;
   onExtractFromUrl: () => void;
+  disabled?: boolean;
 }
 
 const JobDescriptionInput = ({
   jobDescription,
   onJobDescriptionChange,
   onExtractFromUrl,
+  disabled = false,
 }: JobDescriptionInputProps) => {
   return (
     <div className="max-w-4xl mx-auto mb-8">
@@ -20,7 +22,8 @@ const JobDescriptionInput = ({
           </h2>
           <button
             onClick={onExtractFromUrl}
-            className="p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+            disabled={disabled}
+            className="p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Extract from URL"
           >
             <SparklesIcon className="w-5 h-5" />
@@ -34,7 +37,8 @@ const JobDescriptionInput = ({
           value={jobDescription}
           onChange={(e) => onJobDescriptionChange(e.target.value)}
           placeholder="Paste the job description here..."
-          className="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          disabled={disabled}
+          className="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50"
         />
       </div>
     </div>
