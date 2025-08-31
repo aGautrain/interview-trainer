@@ -478,6 +478,7 @@ backend/data/cache/
 !backend/data/.gitkeep
 
 AGENTS.md
+.claude
 
 # =============================================================================
 # END OF .gitignore

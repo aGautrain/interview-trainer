@@ -72,9 +72,9 @@ SAMPLE_SKILL_DISTRIBUTION_DATA = [
 ]
 
 SAMPLE_PERFORMANCE_DATA = [
-    PerformanceData(difficulty="Easy", success=12, failure=3),
-    PerformanceData(difficulty="Medium", success=6, failure=4),
-    PerformanceData(difficulty="Hard", success=2, failure=4)
+    PerformanceData(difficulty="beginner", success=12, failure=3),
+    PerformanceData(difficulty="intermediate", success=6, failure=4),
+    PerformanceData(difficulty="advanced", success=2, failure=4)
 ]
 
 # Sample skills data

@@ -81,12 +81,12 @@ def insert_jobs(cursor):
     for job in SAMPLE_JOBS:
         cursor.execute("""
             INSERT INTO jobs (
-                id, title, company, description, requirements, skills, tech_stack,
+                title, company, description, requirements, skills, tech_stack,
                 location, type, level, salary_range, is_remote, progress,
                 created_at, updated_at
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            job.id, job.title, job.company, job.description, job.requirements,
+            job.title, job.company, job.description, job.requirements,
             job.skills, job.techStack, job.location, job.type, job.level,
             job.salaryRange, job.isRemote, job.progress,
             datetime.fromisoformat(job.createdAt.replace('Z', '+00:00')),
@@ -148,10 +148,10 @@ def insert_questions(cursor):
         for question in questions:
             cursor.execute("""
                 INSERT INTO questions (
-                    id, text, type, difficulty, category, is_completed, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    text, type, difficulty, category, is_completed, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s)
             """, (
-                question.id, question.text, question.type.value, question.difficulty.value,
+                question.text, question.type.value, question.difficulty.value,
                 question.category, question.isCompleted,
                 datetime.fromisoformat(question.createdAt.replace('Z', '+00:00'))
             ))
@@ -169,10 +169,10 @@ def insert_exercises(cursor):
         for exercise in exercises:
             cursor.execute("""
                 INSERT INTO exercises (
-                    id, title, description, difficulty, category, is_completed, created_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    title, description, difficulty, category, is_completed, created_at
+                ) VALUES (%s, %s, %s, %s, %s, %s)
             """, (
-                exercise.id, exercise.title, exercise.description, exercise.difficulty.value,
+                exercise.title, exercise.description, exercise.difficulty.value,
                 exercise.category, exercise.isCompleted,
                 datetime.fromisoformat(exercise.createdAt.replace('Z', '+00:00'))
             ))

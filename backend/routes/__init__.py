@@ -11,11 +11,9 @@ This package contains all the route handlers organized by domain:
 from .dashboard import router as dashboard_router
 from .jobs import router as jobs_router
 from .skills import router as skills_router
-from .legacy import router as legacy_router
 
 __all__ = [
     "dashboard_router",
     "jobs_router", 
-    "skills_router",
-    "legacy_router"
+    "skills_router"
 ]

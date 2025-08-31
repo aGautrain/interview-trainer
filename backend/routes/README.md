@@ -8,7 +8,6 @@ This directory contains all the route handlers for the Interview Trainer API, or
 - **`dashboard.py`** - Dashboard-related endpoints (`/dashboard`, `/dashboard/stats`)
 - **`jobs.py`** - Job-related endpoints (`/jobs`, `/jobs/{job_id}`)
 - **`skills.py`** - Skills and training endpoints (`/skills`, `/skills/{skill_name}/questions`, `/skills/{skill_name}/exercises`)
-- **`legacy.py`** - Legacy endpoints for backward compatibility (`/items/{item_id}`)
 
 ## Benefits of This Structure
 

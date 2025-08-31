@@ -11,6 +11,12 @@ This is a FastAPI backend service that can be easily deployed using Docker Compo
 
 ### Running the Service
 
+0. **Local:**
+
+   ```bash
+   uvicorn main:app --reload
+   ```
+
 1. **Start the service:**
 
    ```bash
