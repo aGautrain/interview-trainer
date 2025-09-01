@@ -25,7 +25,7 @@ from schemas.job_analysis import (
     JobAnalysisRequest, JobAnalysisResponse, JobAnalysisResult,
     SkillRecommendation, ExtractedSkillEnhanced, TrainingRecommendation,
     AnalysisStatus, SkillImportance, TrainingPriority,
-    AnalysisMetrics, BulkJobAnalysisRequest, BulkJobAnalysisResponse
+    AnalysisMetrics
 )
 from schemas.base import DifficultyLevel, SkillType
 from services.llm import (
@@ -213,80 +213,6 @@ class JobAnalysisService:
         """
         return await self._generate_training_recommendations(analysis.extracted_skills, user_id)
     
-    
-    async def bulk_analyze_jobs(
-        self, 
-        request: BulkJobAnalysisRequest
-    ) -> BulkJobAnalysisResponse:
-        """
-        Analyze multiple job descriptions in parallel.
-        
-        Args:
-            request: Bulk analysis request
-            
-        Returns:
-            BulkJobAnalysisResponse with all results
-        """
-        start_time = time.time()
-        batch_id = request.batch_id or str(uuid4())
-        
-        
-        # Create individual analysis requests
-        analysis_requests = []
-        for i, job_description in enumerate(request.job_descriptions):
-            analysis_requests.append(JobAnalysisRequest(
-                job_description=job_description,
-                analysis_depth=request.analysis_depth,
-                user_id=request.user_id,
-                job_title=f"Job {i+1}"  # Default title for bulk
-            ))
-        
-        # Run analyses in parallel with concurrency limit
-        semaphore = asyncio.Semaphore(5)  # Limit concurrent analyses
-        
-        async def analyze_with_semaphore(req):
-            async with semaphore:
-                return await self.analyze_job_description(req)
-        
-        results = await asyncio.gather(
-            *[analyze_with_semaphore(req) for req in analysis_requests],
-            return_exceptions=True
-        )
-        
-        # Process results
-        successful_results = []
-        failed_count = 0
-        total_tokens = 0
-        
-        for result in results:
-            if isinstance(result, Exception):
-                failed_count += 1
-                # Create error response
-                successful_results.append(JobAnalysisResponse(
-                    success=False,
-                    status=AnalysisStatus.FAILED,
-                    error_message=str(result),
-                    analysis_id=str(uuid4())
-                ))
-            else:
-                successful_results.append(result)
-                if result.tokens_used:
-                    total_tokens += result.tokens_used
-                if not result.success:
-                    failed_count += 1
-        
-        processing_time = (time.time() - start_time) * 1000
-        
-        return BulkJobAnalysisResponse(
-            success=failed_count < len(request.job_descriptions),  # Success if at least one succeeded
-            batch_id=batch_id,
-            total_jobs=len(request.job_descriptions),
-            successful_analyses=len(request.job_descriptions) - failed_count,
-            failed_analyses=failed_count,
-            results=successful_results,
-            processing_time_ms=processing_time,
-            total_tokens_used=total_tokens if total_tokens > 0 else None
-        )
     
     async def get_analysis_metrics(self) -> AnalysisMetrics:
         """Get current analysis metrics and statistics"""

@@ -133,31 +133,3 @@ class AnalysisMetrics(BaseModel):
     total_tokens_used: int = Field(default=0, description="Total tokens consumed")
     most_analyzed_skills: List[Dict[str, Any]] = Field(default_factory=list, description="Most frequently analyzed skills")
 
-
-class BulkJobAnalysisRequest(BaseModel):
-    """Request for analyzing multiple jobs at once"""
-    job_descriptions: List[str] = Field(..., min_items=1, max_items=50, description="Job descriptions to analyze")
-    analysis_depth: str = Field("standard", description="Analysis depth for all jobs")
-    user_id: Optional[str] = Field(None, description="User ID for personalized recommendations")
-    batch_id: Optional[str] = Field(None, description="Optional batch ID for tracking")
-    
-    @validator('job_descriptions')
-    def validate_job_descriptions(cls, v):
-        if not v:
-            raise ValueError("At least one job description is required")
-        for desc in v:
-            if not desc.strip():
-                raise ValueError("Job descriptions cannot be empty")
-        return v
-
-
-class BulkJobAnalysisResponse(BaseModel):
-    """Response for bulk job analysis"""
-    success: bool = Field(..., description="Whether bulk analysis was successful")
-    batch_id: str = Field(..., description="Batch ID for tracking")
-    total_jobs: int = Field(..., description="Total number of jobs processed")
-    successful_analyses: int = Field(..., description="Number of successful analyses")
-    failed_analyses: int = Field(..., description="Number of failed analyses")
-    results: List[JobAnalysisResponse] = Field(..., description="Individual analysis results")
-    processing_time_ms: float = Field(..., description="Total processing time")
-    total_tokens_used: Optional[int] = Field(None, description="Total tokens consumed")
