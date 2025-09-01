@@ -45,7 +45,7 @@ docker-compose -f docker-compose.postgres.yml up -d
 python manage_db.py status     # Check database connection and stats
 python manage_db.py schema     # View table structure
 python manage_db.py reset      # Reset all data (preserves schema)
-python populate_sample_data.py # Populate with sample data
+psql -h localhost -U interview_user -d interview_trainer -f init/02_upsert_data.sql # Populate with sample data
 ```
 
 ## Code Architecture
@@ -61,7 +61,7 @@ The backend uses a modular route organization pattern:
   - `skills.py` - Skills and training endpoints
   - `legacy.py` - Backward compatibility endpoints
 - `schemas/` - Pydantic models for request/response validation
-- `sample_data.py` - Mock data for development
+- Database initialization scripts in `database/init/` - Schema and sample data
 
 Key API endpoints:
 
@@ -93,7 +93,7 @@ PostgreSQL database with tables for:
 - Core entities: users, skills, jobs, questions, exercises
 - Training data: skill_cards, question_skills, exercise_skills
 - Dashboard metrics: dashboard_stats, skill_distribution_data, performance_data
-- Configuration: user_preferences, llm_config
+- Configuration: llm_config
 
 ## Development Workflow
 

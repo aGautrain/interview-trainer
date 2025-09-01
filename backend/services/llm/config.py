@@ -111,8 +111,6 @@ class LLMConfig(BaseModel):
     mock: MockConfig = Field(default_factory=MockConfig, description="Mock provider config")
     
     # Global settings
-    enable_caching: bool = Field(True, description="Enable response caching")
-    cache_ttl_minutes: int = Field(60, description="Cache TTL in minutes")
     enable_analytics: bool = Field(True, description="Enable usage analytics")
     log_requests: bool = Field(False, description="Log all requests (disable in production)")
     
@@ -222,7 +220,6 @@ def load_config_from_env() -> LLMConfig:
     
     # Global settings
     enable_caching = os.getenv("LLM_ENABLE_CACHING", "true").lower() == "true"
-    cache_ttl_minutes = int(os.getenv("LLM_CACHE_TTL_MINUTES", "60"))
     enable_analytics = os.getenv("LLM_ENABLE_ANALYTICS", "true").lower() == "true"
     log_requests = os.getenv("LLM_LOG_REQUESTS", "false").lower() == "true"
     
@@ -234,7 +231,6 @@ def load_config_from_env() -> LLMConfig:
         local=local_config,
         mock=mock_config,
         enable_caching=enable_caching,
-        cache_ttl_minutes=cache_ttl_minutes,
         enable_analytics=enable_analytics,
         log_requests=log_requests
     )

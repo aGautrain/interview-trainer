@@ -28,7 +28,7 @@ python manage_db.py status
 pip install -r requirements.txt
 
 # Populate database with sample data
-python populate_sample_data.py
+psql -h localhost -U interview_user -d interview_trainer -f init/02_upsert_data.sql
 ```
 
 ## 📁 File Structure
@@ -37,7 +37,7 @@ python populate_sample_data.py
 database/
 ├── init/
 │   └── 01_create_tables.sql    # Database schema creation
-├── populate_sample_data.py      # Script to insert sample data
+├── 02_upsert_data.sql          # Sample data insertion script
 ├── manage_db.py                 # Database management utilities
 ├── requirements.txt             # Python dependencies
 ├── config.example               # Example environment configuration
@@ -79,12 +79,12 @@ The database includes the following main tables:
 ### Dashboard Tables
 
 - **dashboard_stats** - Overall application statistics
-- **skill_distribution_data** - Skill distribution charts
-- **performance_data** - Performance metrics by difficulty
+- **llm_config** - LLM configuration settings
+- **skill_distribution_data** - Data for skill distribution charts
+- **performance_data** - User performance metrics by difficulty level
 
 ### Configuration Tables
 
-- **user_preferences** - User settings and preferences
 - **llm_config** - LLM API configuration
 
 ## 🛠️ Management Commands

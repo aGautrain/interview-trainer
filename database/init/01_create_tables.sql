@@ -123,18 +123,6 @@ CREATE TABLE IF NOT EXISTS performance_data (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create user_preferences table
-CREATE TABLE IF NOT EXISTS user_preferences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    default_difficulty difficulty_level DEFAULT 'intermediate',
-    preferred_languages TEXT[] DEFAULT '{}',
-    question_types TEXT[] DEFAULT '{}',
-    theme VARCHAR(50) DEFAULT 'auto',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Create llm_config table
 CREATE TABLE IF NOT EXISTS llm_config (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -195,9 +183,6 @@ CREATE TRIGGER update_skills_updated_at BEFORE UPDATE ON skills
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_skill_cards_updated_at BEFORE UPDATE ON skill_cards
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_llm_config_updated_at BEFORE UPDATE ON llm_config

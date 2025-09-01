@@ -134,7 +134,6 @@ async def get_analysis_metrics(
     
     Returns comprehensive metrics including:
     - Analysis success/failure rates
-    - Cache performance statistics
     - Processing time averages
     - Token usage statistics
     - Most frequently analyzed skills
@@ -159,11 +158,11 @@ async def get_training_recommendations(
     """
     Get training recommendations based on a previous job analysis.
     
-    This endpoint retrieves detailed training recommendations from a cached
+    This endpoint retrieves detailed training recommendations from a
     job analysis result, with optional user personalization for skill gap analysis.
     """
     try:
-        # This would typically fetch a cached analysis result
+        # This would typically fetch a stored analysis result
         # For now, return a placeholder response
         
         raise HTTPException(
@@ -180,67 +179,6 @@ async def get_training_recommendations(
         )
 
 
-@router.get("/cache/stats")
-async def get_cache_statistics() -> JSONResponse:
-    """
-    Get cache performance statistics.
-    
-    Returns information about cache hit rates, storage usage,
-    and performance metrics for the job analysis caching system.
-    """
-    try:
-        # This would query the database for cache statistics
-        # For now, return placeholder data
-        
-        stats = {
-            "message": "Cache statistics endpoint is available but not fully implemented",
-            "cache_enabled": True,
-            "placeholder_data": {
-                "total_entries": 0,
-                "hit_rate": 0.0,
-                "avg_hit_time_ms": 0.0,
-                "cache_size_mb": 0.0
-            }
-        }
-        
-        return JSONResponse(content=stats)
-        
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get cache statistics: {str(e)}"
-        )
-
-
-@router.delete("/cache/clear")
-async def clear_analysis_cache(
-    force: bool = Query(False, description="Force clear all cache entries"),
-) -> ApiResponse:
-    """
-    Clear expired cache entries or force clear all cache.
-    
-    By default, only removes expired cache entries. Use force=true
-    to clear all cache entries (useful for development/testing).
-    """
-    try:
-        if force:
-            # This would clear all cache entries
-            return ApiResponse(
-                success=False,
-                message="Force cache clear is not yet implemented"
-            )
-        else:
-            # This would clear only expired entries
-            return ApiResponse(
-                success=False,
-                message="Expired cache clear is not yet implemented"
-            )
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to clear cache: {str(e)}"
-        )
 
 
 @router.get("/health")
@@ -264,7 +202,6 @@ async def health_check(
             "components": {
                 "llm_provider": "unknown",
                 "database": "unknown",
-                "cache": "unknown"
             }
         }
         
@@ -279,9 +216,8 @@ async def health_check(
         except Exception as e:
             health_status["components"]["llm_provider"] = f"error: {str(e)}"
         
-        # Database and cache checks would go here
+        # Database checks would go here
         health_status["components"]["database"] = "not_checked"
-        health_status["components"]["cache"] = "not_checked"
         
         # Determine overall health
         if health_status["components"]["llm_provider"] in ["healthy", "unknown"]:

@@ -22,7 +22,6 @@ class AnalysisStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     FAILED = "failed"
-    CACHED = "cached"
 
 
 class SkillImportance(str, Enum):
@@ -120,20 +119,9 @@ class JobAnalysisResponse(BaseModel):
     processing_time_ms: Optional[float] = Field(None, description="Processing time in milliseconds")
     llm_provider: Optional[str] = Field(None, description="LLM provider used for analysis")
     tokens_used: Optional[int] = Field(None, description="Tokens consumed during analysis")
-    cache_hit: bool = Field(False, description="Whether result came from cache")
     analysis_id: str = Field(..., description="Unique analysis ID for tracking")
 
 
-class JobAnalysisCache(BaseSchema):
-    """Cache entry for job analysis results"""
-    job_description_hash: str = Field(..., description="Hash of job description for cache key")
-    analysis_request: JobAnalysisRequest = Field(..., description="Original analysis request")
-    analysis_result: JobAnalysisResult = Field(..., description="Cached analysis result")
-    llm_provider: str = Field(..., description="LLM provider used")
-    tokens_used: Optional[int] = Field(None, description="Tokens used for analysis")
-    expires_at: datetime = Field(..., description="Cache expiration timestamp")
-    hit_count: int = Field(default=0, description="Number of times cache was accessed")
-    last_accessed: Optional[datetime] = Field(None, description="Last access timestamp")
 
 
 class AnalysisMetrics(BaseModel):
@@ -141,8 +129,6 @@ class AnalysisMetrics(BaseModel):
     total_analyses: int = Field(default=0, description="Total number of analyses performed")
     successful_analyses: int = Field(default=0, description="Number of successful analyses")
     failed_analyses: int = Field(default=0, description="Number of failed analyses")
-    cache_hits: int = Field(default=0, description="Number of cache hits")
-    cache_misses: int = Field(default=0, description="Number of cache misses")
     avg_processing_time_ms: Optional[float] = Field(None, description="Average processing time")
     total_tokens_used: int = Field(default=0, description="Total tokens consumed")
     most_analyzed_skills: List[Dict[str, Any]] = Field(default_factory=list, description="Most frequently analyzed skills")

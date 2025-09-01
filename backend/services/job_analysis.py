@@ -9,16 +9,14 @@ Key Features:
 - Complete job description analysis using LLM providers
 - Skills extraction and matching with database
 - Training recommendations based on skill gaps
-- Caching for expensive LLM operations
 - Comprehensive error handling and retry logic
 - Performance optimization and metrics tracking
 """
 
 import asyncio
-import hashlib
 import json
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional, Set, Tuple, Any
 from uuid import uuid4
 
@@ -26,7 +24,7 @@ from database import fetch_all, fetch_one, execute, fetch_val
 from schemas.job_analysis import (
     JobAnalysisRequest, JobAnalysisResponse, JobAnalysisResult,
     SkillRecommendation, ExtractedSkillEnhanced, TrainingRecommendation,
-    AnalysisStatus, SkillImportance, TrainingPriority, JobAnalysisCache,
+    AnalysisStatus, SkillImportance, TrainingPriority,
     AnalysisMetrics, BulkJobAnalysisRequest, BulkJobAnalysisResponse
 )
 from schemas.base import DifficultyLevel, SkillType
@@ -49,7 +47,6 @@ class JobAnalysisService:
     def __init__(self):
         """Initialize the job analysis service"""
         self._llm_provider: Optional[LLMProvider] = None
-        self._cache_expiry_hours = 24  # Cache results for 24 hours
         self._max_retry_attempts = 3
         self._retry_delay_base = 1.0  # Base delay for exponential backoff
         
@@ -78,12 +75,10 @@ class JobAnalysisService:
         Perform complete job description analysis.
         
         This is the main entry point that orchestrates the entire analysis workflow:
-        1. Check cache for existing analysis
-        2. Extract skills using LLM provider
-        3. Match skills with database entries
-        4. Generate training recommendations
-        5. Calculate readiness scores
-        6. Cache results for future use
+        1. Extract skills using LLM provider
+        2. Match skills with database entries
+        3. Generate training recommendations
+        4. Calculate readiness scores
         
         Args:
             request: Job analysis request with description and context
@@ -96,20 +91,6 @@ class JobAnalysisService:
         
         
         try:
-            # Check cache first
-            cached_result = await self._get_cached_analysis(request)
-            if cached_result:
-                self._metrics.cache_hits += 1
-                return JobAnalysisResponse(
-                    success=True,
-                    status=AnalysisStatus.CACHED,
-                    result=cached_result.analysis_result,
-                    cache_hit=True,
-                    analysis_id=analysis_id,
-                    processing_time_ms=(time.time() - start_time) * 1000
-                )
-            
-            self._metrics.cache_misses += 1
             
             # Perform LLM analysis
             llm_provider = await self._get_llm_provider()
@@ -146,8 +127,6 @@ class JobAnalysisService:
                 }
             )
             
-            # Cache the result
-            await self._cache_analysis_result(request, result, llm_response)
             
             # Update metrics
             processing_time = (time.time() - start_time) * 1000
@@ -311,23 +290,7 @@ class JobAnalysisService:
     
     async def get_analysis_metrics(self) -> AnalysisMetrics:
         """Get current analysis metrics and statistics"""
-        # Update most analyzed skills from database
-        skills_query = """
-            SELECT skill_name, COUNT(*) as analysis_count
-            FROM job_analysis_cache_skills
-            GROUP BY skill_name
-            ORDER BY analysis_count DESC
-            LIMIT 10
-        """
-        
-        try:
-            skill_stats = await fetch_all(skills_query)
-            self._metrics.most_analyzed_skills = [
-                {"skill": row["skill_name"], "count": row["analysis_count"]}
-                for row in skill_stats
-            ]
-        except Exception as e:
-            pass
+        # Note: Skill analysis stats no longer available without cache tables
         
         return self._metrics
     
@@ -600,87 +563,6 @@ class JobAnalysisService:
         else:
             return DifficultyLevel.BEGINNER
     
-    # Caching methods
-    
-    async def _get_cached_analysis(
-        self, 
-        request: JobAnalysisRequest
-    ) -> Optional[JobAnalysisCache]:
-        """Retrieve cached analysis result if available"""
-        description_hash = self._hash_job_description(request.job_description)
-        
-        query = """
-            SELECT analysis_result, llm_provider, tokens_used, expires_at, hit_count
-            FROM job_analysis_cache
-            WHERE job_description_hash = $1 AND expires_at > NOW()
-            ORDER BY created_at DESC
-            LIMIT 1
-        """
-        
-        try:
-            cached_row = await fetch_one(query, description_hash)
-            if cached_row:
-                # Update hit count and last accessed
-                await execute(
-                    "UPDATE job_analysis_cache SET hit_count = hit_count + 1, last_accessed = NOW() WHERE job_description_hash = $1",
-                    description_hash
-                )
-                
-                return JobAnalysisCache(
-                    id="cached",
-                    job_description_hash=description_hash,
-                    analysis_request=request,
-                    analysis_result=JobAnalysisResult(**json.loads(cached_row['analysis_result'])),
-                    llm_provider=cached_row['llm_provider'],
-                    tokens_used=cached_row['tokens_used'],
-                    expires_at=cached_row['expires_at'],
-                    hit_count=cached_row['hit_count'],
-                    createdAt=datetime.utcnow()
-                )
-        except Exception as e:
-            pass
-        
-        return None
-    
-    async def _cache_analysis_result(
-        self, 
-        request: JobAnalysisRequest,
-        result: JobAnalysisResult, 
-        llm_response
-    ) -> None:
-        """Cache analysis result for future use"""
-        description_hash = self._hash_job_description(request.job_description)
-        expires_at = datetime.utcnow() + timedelta(hours=self._cache_expiry_hours)
-        
-        cache_query = """
-            INSERT INTO job_analysis_cache (
-                job_description_hash, analysis_request, analysis_result,
-                llm_provider, tokens_used, expires_at
-            ) VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT (job_description_hash) DO UPDATE SET
-                analysis_result = EXCLUDED.analysis_result,
-                llm_provider = EXCLUDED.llm_provider,
-                tokens_used = EXCLUDED.tokens_used,
-                expires_at = EXCLUDED.expires_at,
-                updated_at = NOW()
-        """
-        
-        try:
-            await execute(
-                cache_query,
-                description_hash,
-                json.dumps(request.model_dump()),
-                json.dumps(result.model_dump()),
-                llm_response.provider,
-                llm_response.tokens_used,
-                expires_at
-            )
-        except Exception as e:
-            pass
-    
-    def _hash_job_description(self, job_description: str) -> str:
-        """Create hash of job description for cache key"""
-        return hashlib.sha256(job_description.encode('utf-8')).hexdigest()[:16]
     
     # Utility and mapping methods
     

@@ -185,16 +185,8 @@ export interface UserSession {
   id: string;
   apiKey: string;
   model: string;
-  preferences: UserPreferences;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface UserPreferences {
-  defaultDifficulty: DifficultyLevel;
-  preferredLanguages: string[];
-  questionTypes: QuestionType[];
-  theme: "light" | "dark" | "auto";
 }
 
 export interface GenerationHistory {

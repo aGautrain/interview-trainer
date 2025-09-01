@@ -91,23 +91,22 @@ def reset_database():
             return False
         
         # Delete data from all tables (in correct order due to foreign keys)
-        tables_to_clear = [
-            'llm_config',
-            'user_preferences', 
+        tables = [
             'users',
-            'exercise_skills',
-            'question_skills',
-            'exercises',
-            'questions',
-            'skill_cards',
-            'performance_data',
-            'skill_distribution_data',
-            'jobs',
             'skills',
-            'dashboard_stats'
+            'jobs',
+            'questions',
+            'exercises',
+            'skill_cards',
+            'dashboard_stats',
+            'skill_distribution_data',
+            'performance_data',
+            'llm_config',
+            'question_skills',
+            'exercise_skills'
         ]
         
-        for table in tables_to_clear:
+        for table in tables:
             cursor.execute(f"DELETE FROM {table}")
             print(f"Cleared table: {table}")
         

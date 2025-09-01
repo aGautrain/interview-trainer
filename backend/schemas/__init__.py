@@ -39,7 +39,6 @@ from .dashboard import (
 
 # User schemas
 from .user import (
-    UserPreferences,
     UserSession,
     LLMConfig,
     UserProfile
@@ -85,7 +84,6 @@ __all__ = [
     "DashboardData",
     
     # User
-    "UserPreferences",
     "UserSession",
     "LLMConfig",
     "UserProfile",

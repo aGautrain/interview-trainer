@@ -24,8 +24,7 @@ class LLMFactory:
     """
     Factory class for creating and managing LLM provider instances.
     
-    The factory uses the registry pattern to allow for easy extension with new providers
-    and provides caching to avoid recreating provider instances unnecessarily.
+    The factory uses the registry pattern to allow for easy extension with new providers.
     """
     
     # Registry of available provider classes
@@ -33,8 +32,6 @@ class LLMFactory:
         LLMProviderType.MOCK: MockProvider
     }
     
-    # Cache for provider instances
-    _provider_cache: Dict[str, LLMProvider] = {}
     
     @classmethod
     def register_provider(cls, provider_type: LLMProviderType, provider_class: Type[LLMProvider]) -> None:
@@ -93,20 +90,10 @@ class LLMFactory:
                 provider_type.value
             )
         
-        # Create cache key
-        cache_key = f"{provider_type.value}:{hash(str(provider_config.model_dump_json()))}"
-        
-        # Return cached instance if available
-        if cache_key in cls._provider_cache:
-            return cls._provider_cache[cache_key]
-        
         # Create new provider instance
         try:
             provider_class = cls._provider_registry[provider_type]
             provider_instance = provider_class(provider_config)
-            
-            # Cache the instance
-            cls._provider_cache[cache_key] = provider_instance
             
             return provider_instance
             
@@ -187,16 +174,9 @@ class LLMFactory:
         )
     
     @classmethod
-    def clear_cache(cls) -> None:
-        """Clear the provider instance cache."""
-        cls._provider_cache.clear()
-    
-    @classmethod
-    def get_cache_info(cls) -> Dict[str, Any]:
-        """Get information about the provider cache."""
+    def get_registry_info(cls) -> Dict[str, Any]:
+        """Get information about the provider registry."""
         return {
-            "cached_providers": len(cls._provider_cache),
-            "cache_keys": list(cls._provider_cache.keys()),
             "registered_types": [p.value for p in cls._provider_registry.keys()]
         }
 
