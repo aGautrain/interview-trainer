@@ -162,24 +162,6 @@ export const JobAnalysisResults: React.FC<JobAnalysisResultsProps> = ({
               </p>
             </div>
             
-            {result.readiness_score !== undefined && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500">
-                  Readiness Score
-                </label>
-                <div className="flex items-center space-x-2">
-                  <p className="text-lg font-medium text-gray-900">
-                    {Math.round(result.readiness_score * 100)}%
-                  </p>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${result.readiness_score * 100}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           
           {result.role_summary && (
@@ -199,8 +181,7 @@ export const JobAnalysisResults: React.FC<JobAnalysisResultsProps> = ({
           {/* Left Column */}
           <div className="space-y-6">
             <SkillsDisplay 
-              skills={result.extracted_skills}
-              skillMatches={result.skill_matches}
+              skills={result.skill_recommendations}
             />
             
             <RequirementsDisplay 
@@ -213,8 +194,7 @@ export const JobAnalysisResults: React.FC<JobAnalysisResultsProps> = ({
           {/* Right Column */}
           <div className="space-y-6">
             <TrainingRecommendations 
-              recommendations={result.training_recommendations}
-              skillGaps={result.skill_gaps}
+              recommendations={result.skill_recommendations}
             />
             
             <AnalysisMetrics 

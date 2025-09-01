@@ -57,49 +57,32 @@ class JobAnalysisRequest(BaseModel):
         return v
 
 
-class ExtractedSkillEnhanced(BaseModel):
-    """Enhanced extracted skill with additional metadata"""
+class SkillRecommendation(BaseModel):
+    """Unified skill extraction and training recommendation"""
+    # Core skill information
     name: str = Field(..., description="Skill name")
     category: str = Field(..., description="Skill category (programming, framework, etc.)")
     skill_type: Optional[SkillType] = Field(None, description="Standardized skill type")
+    
+    # Importance and priority
     importance: SkillImportance = Field(..., description="Importance level in job context")
+    priority: TrainingPriority = Field(..., description="Training priority level (derived from importance)")
+    
+    # Experience and context
     years_required: Optional[int] = Field(None, ge=0, le=20, description="Years of experience required")
     context: Optional[str] = Field(None, description="Context where skill was mentioned")
-    confidence_score: float = Field(..., ge=0.0, le=1.0, description="Confidence in skill extraction")
-    synonyms: List[str] = Field(default_factory=list, description="Alternative names for this skill")
-    related_skills: List[str] = Field(default_factory=list, description="Related/complementary skills")
-
-
-class SkillMatch(BaseModel):
-    """Represents a match between extracted and existing skills"""
-    extracted_skill: ExtractedSkillEnhanced = Field(..., description="The extracted skill")
-    matched_skill_id: Optional[str] = Field(None, description="ID of matched skill in database")
-    matched_skill_name: Optional[str] = Field(None, description="Name of matched skill")
-    match_confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in the match")
-    match_type: str = Field(..., description="Type of match (exact, synonym, partial, semantic)")
-    is_new_skill: bool = Field(False, description="Whether this is a new skill not in database")
-
-
-class SkillGapAnalysis(BaseModel):
-    """Analysis of skill gaps for a user"""
-    skill_name: str = Field(..., description="Name of the skill")
-    required_level: str = Field(..., description="Required proficiency level")
-    current_level: Optional[str] = Field(None, description="User's current level")
-    gap_severity: TrainingPriority = Field(..., description="How critical this gap is")
-    estimated_study_time: Optional[int] = Field(None, ge=0, description="Estimated hours to bridge gap")
-
-
-class TrainingRecommendation(BaseModel):
-    """Training recommendation based on job analysis"""
-    skill_name: str = Field(..., description="Skill to focus on")
-    skill_category: str = Field(..., description="Category of the skill")
-    priority: TrainingPriority = Field(..., description="Training priority level")
-    recommended_actions: List[str] = Field(..., description="Specific actions to take")
+    
+    # Training information
+    recommended_actions: List[str] = Field(default_factory=list, description="Specific actions to take")
     estimated_duration: Optional[str] = Field(None, description="Estimated time commitment")
-    difficulty_level: DifficultyLevel = Field(..., description="Difficulty of training")
+    difficulty_level: DifficultyLevel = Field(DifficultyLevel.INTERMEDIATE, description="Difficulty of training")
     prerequisite_skills: List[str] = Field(default_factory=list, description="Skills needed first")
     learning_resources: List[str] = Field(default_factory=list, description="Recommended resources")
     success_metrics: List[str] = Field(default_factory=list, description="How to measure progress")
+    
+    # Metadata
+    synonyms: List[str] = Field(default_factory=list, description="Alternative names for this skill")
+    related_skills: List[str] = Field(default_factory=list, description="Related/complementary skills")
 
 
 class JobAnalysisResult(BaseModel):
@@ -111,8 +94,7 @@ class JobAnalysisResult(BaseModel):
     
     # Core analysis
     key_requirements: List[str] = Field(..., description="Main job requirements")
-    extracted_skills: List[ExtractedSkillEnhanced] = Field(..., description="All extracted skills")
-    skill_matches: List[SkillMatch] = Field(..., description="Matched skills with database")
+    skill_recommendations: List[SkillRecommendation] = Field(..., description="Unified skill analysis and training recommendations")
     
     # Analysis insights
     experience_level: str = Field(..., description="Required experience level")
@@ -120,13 +102,13 @@ class JobAnalysisResult(BaseModel):
     role_summary: str = Field(..., description="Brief summary of the role")
     compensation_insights: Optional[str] = Field(None, description="Salary/compensation insights")
     
-    # Recommendations
-    training_recommendations: List[TrainingRecommendation] = Field(..., description="Training suggestions")
-    skill_gaps: List[SkillGapAnalysis] = Field(default_factory=list, description="Identified skill gaps")
-    readiness_score: Optional[float] = Field(None, ge=0.0, le=1.0, description="Overall readiness for role")
-    
     # Metadata
     analysis_metadata: Dict[str, Any] = Field(default_factory=dict, description="Analysis metadata")
+
+
+# Backward compatibility aliases
+ExtractedSkillEnhanced = SkillRecommendation
+TrainingRecommendation = SkillRecommendation
 
 
 class JobAnalysisResponse(BaseModel):

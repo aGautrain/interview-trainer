@@ -18,23 +18,20 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline';
 import {
-  type TrainingRecommendation,
-  type SkillGapAnalysis,
+  type SkillRecommendation,
   TrainingPriority,
   DifficultyLevel,
   analysisUtils
 } from '../../services/jobAnalysisService';
 
 interface TrainingRecommendationsProps {
-  recommendations: TrainingRecommendation[];
-  skillGaps: SkillGapAnalysis[];
+  recommendations: SkillRecommendation[];
 }
 
 type FilterPriority = TrainingPriority | 'all';
 
 export const TrainingRecommendations: React.FC<TrainingRecommendationsProps> = ({
-  recommendations,
-  skillGaps
+  recommendations
 }) => {
   const [filterPriority, setFilterPriority] = useState<FilterPriority>('all');
   const [expandedRecommendations, setExpandedRecommendations] = useState<Set<number>>(new Set());
@@ -102,7 +99,7 @@ export const TrainingRecommendations: React.FC<TrainingRecommendationsProps> = (
     };
   };
 
-  if (recommendations.length === 0 && skillGaps.length === 0) {
+  if (recommendations.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -182,53 +179,6 @@ export const TrainingRecommendations: React.FC<TrainingRecommendationsProps> = (
 
       {/* Content */}
       <div className="p-6">
-        {/* Skill Gaps Section */}
-        {skillGaps.length > 0 && (
-          <div className="mb-8">
-            <h4 className="text-md font-semibold text-gray-900 mb-4 flex items-center">
-              <ExclamationTriangleIcon className="h-4 w-4 mr-2 text-amber-500" />
-              Identified Skill Gaps ({skillGaps.length})
-            </h4>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {skillGaps.map((gap, index) => {
-                const priorityInfo = getPriorityInfo(gap.gap_severity);
-                const PriorityIcon = priorityInfo.icon;
-                
-                return (
-                  <div
-                    key={index}
-                    className={`border rounded-lg p-4 ${priorityInfo.color}`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h5 className="font-medium text-gray-900">{gap.skill_name}</h5>
-                      <PriorityIcon className={`h-4 w-4 ${priorityInfo.textColor}`} />
-                    </div>
-                    
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Required:</span>
-                        <span className="font-medium">{gap.required_level}</span>
-                      </div>
-                      {gap.current_level && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Current:</span>
-                          <span className="font-medium">{gap.current_level}</span>
-                        </div>
-                      )}
-                      {gap.estimated_study_time && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Study Time:</span>
-                          <span className="font-medium">{gap.estimated_study_time} hours</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Training Recommendations */}
         {filteredRecommendations.length > 0 && (
@@ -262,10 +212,10 @@ export const TrainingRecommendations: React.FC<TrainingRecommendationsProps> = (
                           </div>
                           <div>
                             <h5 className="font-semibold text-gray-900">
-                              {recommendation.skill_name}
+                              {recommendation.name}
                             </h5>
                             <p className="text-sm text-gray-600">
-                              {recommendation.skill_category}
+                              {recommendation.category}
                             </p>
                           </div>
                         </div>

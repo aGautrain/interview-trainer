@@ -87,7 +87,7 @@ async def test_basic_job_analysis():
         if result.extracted_skills:
             print(f"\n🔧 Top Skills Found:")
             for i, skill in enumerate(result.extracted_skills[:5]):
-                print(f"  {i+1}. {skill.name} ({skill.importance}) - {skill.confidence_score:.2f}")
+                print(f"  {i+1}. {skill.name} ({skill.importance})")
         
         # Show training recommendations
         if result.training_recommendations:
@@ -116,7 +116,7 @@ async def test_skill_extraction():
     
     print(f"📊 Extracted {len(skills)} skills:")
     for skill in skills:
-        print(f"  - {skill.name} ({skill.category}) - confidence: {skill.confidence_score:.2f}")
+        print(f"  - {skill.name} ({skill.category})")
 
 
 async def test_bulk_analysis():

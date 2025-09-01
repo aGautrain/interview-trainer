@@ -2,7 +2,7 @@
  * AnalysisMetrics Component
  * 
  * Displays analysis insights, statistics, and metadata about the job analysis
- * including processing details, confidence metrics, and performance indicators.
+ * including processing details and performance indicators.
  */
 
 import React, { useMemo } from 'react';
@@ -31,8 +31,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
 }) => {
   // Calculate various metrics
   const metrics = useMemo(() => {
-    const skills = result.extracted_skills;
-    const avgConfidence = analysisUtils.getAverageConfidence(skills);
+    const skills = result.skill_recommendations;
     const skillsByImportance = analysisUtils.getSkillsByImportance(skills);
     const skillsByCategory = analysisUtils.getSkillsByCategory(skills);
     
@@ -56,16 +55,15 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
     // Analysis completeness score
     const completenessFactors = [
       result.role_summary ? 1 : 0,
-      result.extracted_skills.length > 0 ? 1 : 0,
+      result.skill_recommendations.length > 0 ? 1 : 0,
       result.key_requirements.length > 0 ? 1 : 0,
-      result.training_recommendations.length > 0 ? 1 : 0,
+      result.skill_recommendations.filter(s => s.recommended_actions.length > 0).length > 0 ? 1 : 0,
       result.experience_level ? 1 : 0,
       result.industry ? 1 : 0
     ];
     const completenessScore = completenessFactors.reduce((a, b) => a + b, 0) / completenessFactors.length * 100;
 
     return {
-      avgConfidence,
       totalSkills,
       criticalPercentage,
       importantPercentage,
@@ -119,16 +117,6 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
     return insights;
   }, [result.analysis_metadata]);
 
-  // Get confidence level classification
-  const getConfidenceLevel = (confidence: number) => {
-    if (confidence >= 0.9) return { label: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-50' };
-    if (confidence >= 0.8) return { label: 'Very Good', color: 'text-blue-600', bgColor: 'bg-blue-50' };
-    if (confidence >= 0.7) return { label: 'Good', color: 'text-yellow-600', bgColor: 'bg-yellow-50' };
-    if (confidence >= 0.6) return { label: 'Moderate', color: 'text-orange-600', bgColor: 'bg-orange-50' };
-    return { label: 'Needs Review', color: 'text-red-600', bgColor: 'bg-red-50' };
-  };
-
-  const confidenceLevel = getConfidenceLevel(metrics.avgConfidence);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -151,32 +139,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
         <div>
           <h4 className="text-md font-semibold text-gray-900 mb-4">Quality Metrics</h4>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Average Confidence */}
-            <div className={`rounded-lg p-4 border ${confidenceLevel.bgColor} ${confidenceLevel.color}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Average Confidence</p>
-                  <p className="text-2xl font-bold">
-                    {(metrics.avgConfidence * 100).toFixed(1)}%
-                  </p>
-                  <p className="text-xs mt-1 opacity-80">
-                    {confidenceLevel.label}
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-white bg-opacity-50 flex items-center justify-center">
-                  <ChartBarIcon className="h-6 w-6" />
-                </div>
-              </div>
-              
-              <div className="mt-3 bg-white bg-opacity-30 rounded-full h-2">
-                <div 
-                  className="bg-current h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${metrics.avgConfidence * 100}%` }}
-                />
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 gap-4">
             {/* Analysis Completeness */}
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200 text-blue-600">
               <div className="flex items-center justify-between">
@@ -217,7 +180,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
                   <span>Critical Skills</span>
                 </div>
                 <span className="font-medium">
-                  {metrics.criticalPercentage.toFixed(1)}% ({result.extracted_skills.filter(s => s.importance === 'critical').length})
+                  {metrics.criticalPercentage.toFixed(1)}% ({result.skill_recommendations.filter(s => s.importance === 'critical').length})
                 </span>
               </div>
               
@@ -236,7 +199,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
                   <span>Important Skills</span>
                 </div>
                 <span className="font-medium">
-                  {metrics.importantPercentage.toFixed(1)}% ({result.extracted_skills.filter(s => s.importance === 'important').length})
+                  {metrics.importantPercentage.toFixed(1)}% ({result.skill_recommendations.filter(s => s.importance === 'important').length})
                 </span>
               </div>
               
@@ -256,7 +219,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
             <h4 className="text-md font-semibold text-gray-900 mb-4">Top Skill Categories</h4>
             
             <div className="space-y-3">
-              {metrics.topCategories.map((category, categoryIndex) => (
+              {metrics.topCategories.map((category) => (
                 <div key={category.name} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="flex-shrink-0">
@@ -327,7 +290,7 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
         <div className="bg-gray-50 rounded-lg p-4 border">
           <h4 className="text-md font-semibold text-gray-900 mb-3">Analysis Summary</h4>
           
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-sm">
             <div>
               <div className="text-lg font-bold text-blue-600">{metrics.totalSkills}</div>
               <div className="text-gray-600">Skills Extracted</div>
@@ -337,12 +300,8 @@ export const AnalysisMetrics: React.FC<AnalysisMetricsProps> = ({
               <div className="text-gray-600">Requirements</div>
             </div>
             <div>
-              <div className="text-lg font-bold text-green-600">{result.training_recommendations.length}</div>
+              <div className="text-lg font-bold text-green-600">{result.skill_recommendations.filter(s => s.recommended_actions.length > 0).length}</div>
               <div className="text-gray-600">Recommendations</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-orange-600">{result.skill_gaps.length}</div>
-              <div className="text-gray-600">Skill Gaps</div>
             </div>
           </div>
         </div>

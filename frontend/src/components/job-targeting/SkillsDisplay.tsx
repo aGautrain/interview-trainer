@@ -1,7 +1,7 @@
 /**
  * SkillsDisplay Component
  * 
- * Displays extracted skills from job analysis with confidence scores, importance levels,
+ * Displays extracted skills from job analysis with importance levels,
  * categories, and matching information. Provides filtering and grouping options.
  */
 
@@ -13,27 +13,23 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { 
-  type ExtractedSkillEnhanced, 
-  type SkillMatch,
+  type SkillRecommendation, 
   SkillImportance,
   analysisUtils
 } from '../../services/jobAnalysisService';
 
 interface SkillsDisplayProps {
-  skills: ExtractedSkillEnhanced[];
-  skillMatches?: SkillMatch[];
+  skills: SkillRecommendation[];
 }
 
-type ViewMode = 'importance' | 'category' | 'confidence' | 'experience';
+type ViewMode = 'importance' | 'category' | 'experience';
 type FilterImportance = SkillImportance | 'all';
 
 export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
-  skills,
-  skillMatches = []
+  skills
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('importance');
   const [filterImportance, setFilterImportance] = useState<FilterImportance>('all');
-  const [showOnlyMatched, setShowOnlyMatched] = useState(false);
 
   // Filter skills based on selected filters
   const filteredSkills = useMemo(() => {
@@ -44,18 +40,8 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
       filtered = filtered.filter(skill => skill.importance === filterImportance);
     }
 
-    // Filter by match status
-    if (showOnlyMatched) {
-      const matchedSkillNames = new Set(
-        skillMatches
-          .filter(match => !match.is_new_skill)
-          .map(match => match.extracted_skill.name)
-      );
-      filtered = filtered.filter(skill => matchedSkillNames.has(skill.name));
-    }
-
     return filtered;
-  }, [skills, filterImportance, showOnlyMatched, skillMatches]);
+  }, [skills, filterImportance]);
 
   // Group skills by selected view mode
   const groupedSkills = useMemo(() => {
@@ -64,12 +50,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
         return analysisUtils.getSkillsByImportance(filteredSkills);
       case 'category':
         return analysisUtils.getSkillsByCategory(filteredSkills);
-      case 'confidence':
-        return {
-          'High Confidence (80%+)': filteredSkills.filter(s => s.confidence_score >= 0.8),
-          'Medium Confidence (60-80%)': filteredSkills.filter(s => s.confidence_score >= 0.6 && s.confidence_score < 0.8),
-          'Lower Confidence (<60%)': filteredSkills.filter(s => s.confidence_score < 0.6)
-        };
       case 'experience':
         return {
           'Senior (5+ years)': filteredSkills.filter(s => s.years_required && s.years_required >= 5),
@@ -82,10 +62,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
     }
   }, [filteredSkills, viewMode]);
 
-  // Get skill match info
-  const getSkillMatchInfo = (skillName: string) => {
-    return skillMatches.find(match => match.extracted_skill.name === skillName);
-  };
 
   // Get importance display info
   const getImportanceInfo = (importance: SkillImportance) => {
@@ -103,7 +79,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
     }
   };
 
-  const avgConfidence = analysisUtils.getAverageConfidence(filteredSkills);
 
   if (skills.length === 0) {
     return (
@@ -132,9 +107,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
             <TagIcon className="h-5 w-5 mr-2" />
             Extracted Skills ({filteredSkills.length})
           </h3>
-          <div className="text-sm text-gray-500">
-            Avg Confidence: {(avgConfidence * 100).toFixed(1)}%
-          </div>
         </div>
 
         {/* Controls */}
@@ -151,7 +123,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
             >
               <option value="importance">Importance Level</option>
               <option value="category">Category</option>
-              <option value="confidence">Confidence Score</option>
               <option value="experience">Experience Required</option>
             </select>
           </div>
@@ -174,23 +145,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
             </select>
           </div>
 
-          {/* Match Filter */}
-          {skillMatches.length > 0 && (
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                &nbsp;
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={showOnlyMatched}
-                  onChange={(e) => setShowOnlyMatched(e.target.checked)}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <span className="text-sm text-gray-700">Show only matched skills</span>
-              </label>
-            </div>
-          )}
         </div>
       </div>
 
@@ -205,7 +159,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {groupSkills.map((skill, index) => {
-                  const matchInfo = getSkillMatchInfo(skill.name);
                   const importanceInfo = getImportanceInfo(skill.importance);
                   
                   return (
@@ -219,22 +172,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
                           {skill.name}
                         </h5>
                         
-                        {/* Match Status */}
-                        {matchInfo && (
-                          <div className="ml-2 flex-shrink-0">
-                            {matchInfo.is_new_skill ? (
-                              <ExclamationTriangleIcon 
-                                className="h-4 w-4 text-amber-500"
-                                title="New skill not in database"
-                              />
-                            ) : (
-                              <CheckBadgeIcon 
-                                className="h-4 w-4 text-green-500"
-                                title={`Matched: ${matchInfo.matched_skill_name} (${(matchInfo.match_confidence * 100).toFixed(0)}%)`}
-                              />
-                            )}
-                          </div>
-                        )}
                       </div>
 
                       {/* Skill Details */}
@@ -249,29 +186,14 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
                           </span>
                         </div>
 
-                        {/* Confidence and Experience */}
-                        <div className="flex items-center justify-between text-xs text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <span>Confidence:</span>
-                            <div className="flex items-center space-x-1">
-                              <div className="w-12 bg-gray-200 rounded-full h-1.5">
-                                <div 
-                                  className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                                  style={{ width: `${skill.confidence_score * 100}%` }}
-                                />
-                              </div>
-                              <span className="font-medium">
-                                {(skill.confidence_score * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {skill.years_required && (
+                        {/* Experience */}
+                        {skill.years_required && (
+                          <div className="flex items-center justify-end text-xs text-gray-600">
                             <span className="text-gray-500">
                               {skill.years_required}+ years
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         {/* Context */}
                         {skill.context && (
@@ -327,14 +249,6 @@ export const SkillsDisplay: React.FC<SkillsDisplayProps> = ({
               </div>
             </div>
             
-            {skillMatches.length > 0 && (
-              <div className="flex items-center space-x-1 text-green-600">
-                <CheckBadgeIcon className="h-4 w-4" />
-                <span>
-                  {skillMatches.filter(m => !m.is_new_skill).length} matched in database
-                </span>
-              </div>
-            )}
           </div>
         </div>
       )}

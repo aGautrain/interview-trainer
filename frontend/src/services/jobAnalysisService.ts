@@ -60,45 +60,38 @@ export interface JobAnalysisRequest {
   user_id?: string;
 }
 
-export interface ExtractedSkillEnhanced {
+export interface SkillRecommendation {
+  // Core skill information
   name: string;
   category: string;
   skill_type?: SkillType;
+  
+  // Importance and priority
   importance: SkillImportance;
+  priority: TrainingPriority;
+  
+  // Experience and context
   years_required?: number;
   context?: string;
-  confidence_score: number;
-  synonyms: string[];
-  related_skills: string[];
-}
-
-export interface SkillMatch {
-  extracted_skill: ExtractedSkillEnhanced;
-  matched_skill_id?: string;
-  matched_skill_name?: string;
-  match_confidence: number;
-  match_type: string;
-  is_new_skill: boolean;
-}
-
-export interface SkillGapAnalysis {
-  skill_name: string;
-  required_level: string;
-  current_level?: string;
-  gap_severity: TrainingPriority;
-  estimated_study_time?: number;
-}
-
-export interface TrainingRecommendation {
-  skill_name: string;
-  skill_category: string;
-  priority: TrainingPriority;
+  
+  // Training information
   recommended_actions: string[];
   estimated_duration?: string;
   difficulty_level: DifficultyLevel;
   prerequisite_skills: string[];
   learning_resources: string[];
   success_metrics: string[];
+  
+  // Metadata
+  synonyms: string[];
+  related_skills: string[];
+}
+
+// Backward compatibility aliases
+export interface ExtractedSkillEnhanced extends SkillRecommendation {}
+export interface TrainingRecommendation extends SkillRecommendation {
+  skill_name: string;  // alias for name
+  skill_category: string;  // alias for category
 }
 
 export interface JobAnalysisResult {
@@ -109,8 +102,7 @@ export interface JobAnalysisResult {
   
   // Core analysis
   key_requirements: string[];
-  extracted_skills: ExtractedSkillEnhanced[];
-  skill_matches: SkillMatch[];
+  skill_recommendations: SkillRecommendation[];
   
   // Analysis insights
   experience_level: string;
@@ -118,10 +110,9 @@ export interface JobAnalysisResult {
   role_summary: string;
   compensation_insights?: string;
   
-  // Recommendations
-  training_recommendations: TrainingRecommendation[];
-  skill_gaps: SkillGapAnalysis[];
-  readiness_score?: number;
+  // Backward compatibility
+  extracted_skills?: ExtractedSkillEnhanced[];  // deprecated, use skill_recommendations
+  training_recommendations?: TrainingRecommendation[];  // deprecated, use skill_recommendations
   
   // Metadata
   analysis_metadata: Record<string, any>;
@@ -301,42 +292,46 @@ export const analysisUtils = {
   /**
    * Get skills grouped by importance level
    */
-  getSkillsByImportance(skills: ExtractedSkillEnhanced[]): Record<SkillImportance, ExtractedSkillEnhanced[]> {
+  getSkillsByImportance(skills: SkillRecommendation[]): Record<SkillImportance, SkillRecommendation[]> {
     return skills.reduce((groups, skill) => {
       if (!groups[skill.importance]) {
         groups[skill.importance] = [];
       }
       groups[skill.importance].push(skill);
       return groups;
-    }, {} as Record<SkillImportance, ExtractedSkillEnhanced[]>);
+    }, {} as Record<SkillImportance, SkillRecommendation[]>);
   },
 
   /**
    * Get skills grouped by category
    */
-  getSkillsByCategory(skills: ExtractedSkillEnhanced[]): Record<string, ExtractedSkillEnhanced[]> {
+  getSkillsByCategory(skills: SkillRecommendation[]): Record<string, SkillRecommendation[]> {
     return skills.reduce((groups, skill) => {
       if (!groups[skill.category]) {
         groups[skill.category] = [];
       }
       groups[skill.category].push(skill);
       return groups;
-    }, {} as Record<string, ExtractedSkillEnhanced[]>);
+    }, {} as Record<string, SkillRecommendation[]>);
   },
 
   /**
-   * Calculate average confidence score
+   * Get skill recommendations grouped by priority level
    */
-  getAverageConfidence(skills: ExtractedSkillEnhanced[]): number {
-    if (skills.length === 0) return 0;
-    const total = skills.reduce((sum, skill) => sum + skill.confidence_score, 0);
-    return total / skills.length;
+  getSkillsByPriority(skills: SkillRecommendation[]): Record<TrainingPriority, SkillRecommendation[]> {
+    return skills.reduce((groups, skill) => {
+      if (!groups[skill.priority]) {
+        groups[skill.priority] = [];
+      }
+      groups[skill.priority].push(skill);
+      return groups;
+    }, {} as Record<TrainingPriority, SkillRecommendation[]>);
   },
 
   /**
-   * Get high priority training recommendations
+   * Get high priority skill recommendations
    */
-  getHighPriorityRecommendations(recommendations: TrainingRecommendation[]): TrainingRecommendation[] {
+  getHighPriorityRecommendations(recommendations: SkillRecommendation[]): SkillRecommendation[] {
     return recommendations.filter(rec => rec.priority === TrainingPriority.HIGH);
   },
 

@@ -25,7 +25,7 @@ from uuid import uuid4
 from database import fetch_all, fetch_one, execute, fetch_val
 from schemas.job_analysis import (
     JobAnalysisRequest, JobAnalysisResponse, JobAnalysisResult,
-    ExtractedSkillEnhanced, SkillMatch, TrainingRecommendation, SkillGapAnalysis,
+    SkillRecommendation, ExtractedSkillEnhanced, TrainingRecommendation,
     AnalysisStatus, SkillImportance, TrainingPriority, JobAnalysisCache,
     AnalysisMetrics, BulkJobAnalysisRequest, BulkJobAnalysisResponse
 )
@@ -125,26 +125,9 @@ class JobAnalysisService:
                     llm_provider.provider_name
                 )
             
-            # Extract and enhance skills
+            # Extract skills and generate unified skill recommendations
             job_analysis = JobAnalysis(**llm_response.data)
-            enhanced_skills = await self._enhance_extracted_skills(job_analysis)
-            
-            # Match skills with database
-            skill_matches = await self._match_skills_with_database(enhanced_skills)
-            matched_count = len([m for m in skill_matches if not m.is_new_skill])
-            new_count = len([m for m in skill_matches if m.is_new_skill])
-            
-            # Generate training recommendations
-            training_recommendations = await self._generate_training_recommendations(
-                skill_matches, request.user_id
-            )
-            
-            # Calculate skill gaps if user provided
-            skill_gaps = []
-            readiness_score = None
-            if request.user_id:
-                skill_gaps = await self._analyze_skill_gaps(skill_matches, request.user_id)
-                readiness_score = await self._calculate_readiness_score(skill_gaps)
+            skill_recommendations = await self._generate_unified_skill_recommendations(job_analysis, request.user_id)
             
             # Build comprehensive result
             result = JobAnalysisResult(
@@ -152,20 +135,14 @@ class JobAnalysisService:
                 company_name=request.company_name,
                 industry=job_analysis.industry,
                 key_requirements=job_analysis.key_requirements,
-                extracted_skills=enhanced_skills,
-                skill_matches=skill_matches,
+                skill_recommendations=skill_recommendations,
                 experience_level=job_analysis.experience_level,
                 difficulty_assessment=self._map_difficulty_level(job_analysis.difficulty_assessment),
                 role_summary=job_analysis.summary,
-                training_recommendations=training_recommendations,
-                skill_gaps=skill_gaps,
-                readiness_score=readiness_score,
                 analysis_metadata={
                     "llm_provider": llm_provider.provider_name,
                     "analysis_depth": request.analysis_depth,
-                    "skills_count": len(enhanced_skills),
-                    "matches_found": len([m for m in skill_matches if not m.is_new_skill]),
-                    "new_skills": len([m for m in skill_matches if m.is_new_skill])
+                    "skills_count": len(skill_recommendations)
                 }
             )
             
@@ -255,22 +232,8 @@ class JobAnalysisService:
         Returns:
             List of prioritized training recommendations
         """
-        return await self._generate_training_recommendations(analysis.skill_matches, user_id)
+        return await self._generate_training_recommendations(analysis.extracted_skills, user_id)
     
-    async def match_existing_skills(
-        self, 
-        extracted_skills: List[ExtractedSkillEnhanced]
-    ) -> List[SkillMatch]:
-        """
-        Match extracted skills against existing database skills.
-        
-        Args:
-            extracted_skills: Skills extracted from analysis
-            
-        Returns:
-            List of skill matches with confidence scores
-        """
-        return await self._match_skills_with_database(extracted_skills)
     
     async def bulk_analyze_jobs(
         self, 
@@ -419,7 +382,6 @@ class JobAnalysisService:
                 importance=self._map_importance(skill.importance),
                 years_required=skill.years_required,
                 context=skill.context,
-                confidence_score=self._calculate_skill_confidence(skill),
                 synonyms=await self._find_skill_synonyms(skill.name),
                 related_skills=await self._find_related_skills(skill.name)
             ))
@@ -433,7 +395,6 @@ class JobAnalysisService:
                 importance=self._map_importance(skill.importance),
                 years_required=skill.years_required,
                 context=skill.context,
-                confidence_score=self._calculate_skill_confidence(skill),
                 synonyms=await self._find_skill_synonyms(skill.name),
                 related_skills=await self._find_related_skills(skill.name)
             ))
@@ -455,137 +416,33 @@ class JobAnalysisService:
                 importance=self._map_importance(skill.importance),
                 years_required=skill.years_required,
                 context=skill.context,
-                confidence_score=self._calculate_skill_confidence(skill),
                 synonyms=await self._find_skill_synonyms(skill.name),
                 related_skills=await self._find_related_skills(skill.name)
             ))
         
         return enhanced_skills
     
-    async def _match_skills_with_database(
-        self, 
-        extracted_skills: List[ExtractedSkillEnhanced]
-    ) -> List[SkillMatch]:
-        """Match extracted skills with database entries"""
-        skill_matches = []
-        
-        # Get all existing skills from database
-        existing_skills_query = """
-            SELECT DISTINCT name, category, type
-            FROM skill_cards
-            ORDER BY name
-        """
-        
-        try:
-            existing_skills = await fetch_all(existing_skills_query)
-            existing_skill_names = {skill['name'].lower(): skill for skill in existing_skills}
-            
-            for extracted_skill in extracted_skills:
-                match = await self._find_best_skill_match(
-                    extracted_skill, 
-                    existing_skill_names
-                )
-                skill_matches.append(match)
-                
-        except Exception as e:
-            # If database matching fails, treat all as new skills
-            for extracted_skill in extracted_skills:
-                skill_matches.append(SkillMatch(
-                    extracted_skill=extracted_skill,
-                    match_confidence=0.0,
-                    match_type="no_database",
-                    is_new_skill=True
-                ))
-        
-        return skill_matches
-    
-    async def _find_best_skill_match(
-        self, 
-        extracted_skill: ExtractedSkillEnhanced,
-        existing_skills: Dict[str, Dict[str, Any]]
-    ) -> SkillMatch:
-        """Find the best match for an extracted skill"""
-        skill_name_lower = extracted_skill.name.lower()
-        
-        # Check for exact match
-        if skill_name_lower in existing_skills:
-            existing_skill = existing_skills[skill_name_lower]
-            return SkillMatch(
-                extracted_skill=extracted_skill,
-                matched_skill_id=str(hash(existing_skill['name'])),  # Temporary ID
-                matched_skill_name=existing_skill['name'],
-                match_confidence=self._exact_match_threshold,
-                match_type="exact",
-                is_new_skill=False
-            )
-        
-        # Check synonyms
-        for synonym in extracted_skill.synonyms:
-            if synonym.lower() in existing_skills:
-                existing_skill = existing_skills[synonym.lower()]
-                return SkillMatch(
-                    extracted_skill=extracted_skill,
-                    matched_skill_id=str(hash(existing_skill['name'])),
-                    matched_skill_name=existing_skill['name'],
-                    match_confidence=self._synonym_match_threshold,
-                    match_type="synonym",
-                    is_new_skill=False
-                )
-        
-        # Check partial matches
-        best_match = None
-        best_confidence = 0.0
-        
-        for existing_name, existing_skill in existing_skills.items():
-            confidence = self._calculate_string_similarity(skill_name_lower, existing_name)
-            
-            if confidence > self._partial_match_threshold and confidence > best_confidence:
-                best_confidence = confidence
-                best_match = SkillMatch(
-                    extracted_skill=extracted_skill,
-                    matched_skill_id=str(hash(existing_skill['name'])),
-                    matched_skill_name=existing_skill['name'],
-                    match_confidence=confidence,
-                    match_type="partial",
-                    is_new_skill=False
-                )
-        
-        if best_match:
-            return best_match
-        
-        # No match found - it's a new skill
-        return SkillMatch(
-            extracted_skill=extracted_skill,
-            match_confidence=0.0,
-            match_type="new",
-            is_new_skill=True
-        )
     
     async def _generate_training_recommendations(
         self, 
-        skill_matches: List[SkillMatch],
+        extracted_skills: List[ExtractedSkillEnhanced],
         user_id: Optional[str] = None
     ) -> List[TrainingRecommendation]:
-        """Generate training recommendations based on skill matches"""
+        """Generate training recommendations based on extracted skills"""
         recommendations = []
         
-        # Prioritize skills by importance and match status
+        # Prioritize skills by importance
         prioritized_skills = sorted(
-            skill_matches,
-            key=lambda x: (
-                self._importance_to_priority(x.extracted_skill.importance),
-                -x.match_confidence if not x.is_new_skill else 1.0
-            )
+            extracted_skills,
+            key=lambda x: self._importance_to_priority(x.importance)
         )
         
-        for skill_match in prioritized_skills:
-            skill = skill_match.extracted_skill
-            
+        for skill in prioritized_skills:
             # Determine priority based on importance and current skill level
-            priority = self._determine_training_priority(skill, skill_match, user_id)
+            priority = self._determine_training_priority(skill, user_id)
             
             # Generate specific recommendations
-            recommended_actions = await self._generate_skill_actions(skill, skill_match)
+            recommended_actions = await self._generate_skill_actions(skill)
             
             recommendation = TrainingRecommendation(
                 skill_name=skill.name,
@@ -605,97 +462,143 @@ class JobAnalysisService:
         final_recommendations = recommendations[:10]
         return final_recommendations
     
-    async def _analyze_skill_gaps(
-        self, 
-        skill_matches: List[SkillMatch],
-        user_id: str
-    ) -> List[SkillGapAnalysis]:
-        """Analyze skill gaps for a specific user"""
-        skill_gaps = []
-        
-        # Get user's current skill levels (this would query user progress data)
-        user_skills_query = """
-            SELECT skill_name, proficiency_level, years_experience
-            FROM user_skills
-            WHERE user_id = $1
-        """
-        
-        try:
-            user_skills = await fetch_all(user_skills_query, user_id)
-            user_skill_levels = {
-                skill['skill_name'].lower(): {
-                    'level': skill['proficiency_level'],
-                    'years': skill['years_experience']
-                }
-                for skill in user_skills
-            }
-            
-            for skill_match in skill_matches:
-                skill = skill_match.extracted_skill
-                skill_name_lower = skill.name.lower()
-                
-                # Determine required level
-                required_level = self._map_years_to_level(skill.years_required or 0)
-                
-                # Get current level
-                current_level = None
-                if skill_name_lower in user_skill_levels:
-                    current_level = user_skill_levels[skill_name_lower]['level']
-                
-                # Calculate gap severity
-                gap_severity = self._calculate_gap_severity(
-                    required_level, current_level, skill.importance
-                )
-                
-                # Estimate study time
-                study_time = self._estimate_gap_study_time(
-                    required_level, current_level, skill.category
-                )
-                
-                skill_gaps.append(SkillGapAnalysis(
-                    skill_name=skill.name,
-                    required_level=required_level,
-                    current_level=current_level,
-                    gap_severity=gap_severity,
-                    estimated_study_time=study_time
-                ))
-                
-        except Exception as e:
-            pass
-        
-        return skill_gaps
     
-    async def _calculate_readiness_score(self, skill_gaps: List[SkillGapAnalysis]) -> float:
-        """Calculate overall readiness score based on skill gaps"""
-        if not skill_gaps:
-            return 0.8  # Default score when no user data available
+    
+    async def _generate_unified_skill_recommendations(
+        self, 
+        job_analysis: JobAnalysis,
+        user_id: Optional[str] = None
+    ) -> List[SkillRecommendation]:
+        """Generate unified skill recommendations combining skill extraction and training recommendations"""
+        skill_recommendations = []
         
-        # Weight gaps by severity
-        severity_weights = {
-            TrainingPriority.HIGH: 1.0,
-            TrainingPriority.MEDIUM: 0.7,
-            TrainingPriority.LOW: 0.3
+        # Process technical skills
+        for skill in job_analysis.technical_skills:
+            skill_recommendation = await self._create_skill_recommendation(skill, SkillType.PROGRAMMING, user_id)
+            skill_recommendations.append(skill_recommendation)
+        
+        # Process soft skills
+        for skill in job_analysis.soft_skills:
+            skill_recommendation = await self._create_skill_recommendation(skill, SkillType.SOFT_SKILL, user_id)
+            skill_recommendations.append(skill_recommendation)
+        
+        # Sort by priority (high to low) and importance (critical to nice_to_have)
+        skill_recommendations.sort(
+            key=lambda x: (
+                self._priority_sort_order(x.priority),
+                self._importance_sort_order(x.importance)
+            )
+        )
+        
+        # Limit to top 15 recommendations to avoid overwhelming users
+        return skill_recommendations[:15]
+    
+    async def _create_skill_recommendation(
+        self,
+        skill: ExtractedSkill,
+        default_skill_type: SkillType,
+        user_id: Optional[str] = None
+    ) -> SkillRecommendation:
+        """Create a unified skill recommendation from extracted skill data"""
+        
+        # Map importance to priority
+        importance = self._map_importance(skill.importance)
+        priority = self._importance_to_training_priority(importance)
+        
+        # Generate training information - use simpler methods for now
+        recommended_actions = await self._generate_simple_actions(skill)
+        learning_resources = await self._suggest_simple_resources(skill)
+        success_metrics = self._define_simple_metrics(skill)
+        
+        return SkillRecommendation(
+            name=skill.name,
+            category=skill.category,
+            skill_type=self._map_skill_type(skill.category) or default_skill_type,
+            importance=importance,
+            priority=priority,
+            years_required=skill.years_required,
+            context=skill.context,
+            recommended_actions=recommended_actions,
+            estimated_duration=self._estimate_duration_from_skill(skill),
+            difficulty_level=self._estimate_difficulty_from_skill(skill),
+            prerequisite_skills=await self._find_related_skills(skill.name),
+            learning_resources=learning_resources,
+            success_metrics=success_metrics,
+            synonyms=await self._find_skill_synonyms(skill.name),
+            related_skills=await self._find_related_skills(skill.name)
+        )
+    
+    def _importance_to_training_priority(self, importance: SkillImportance) -> TrainingPriority:
+        """Convert skill importance to training priority"""
+        importance_to_priority_map = {
+            SkillImportance.CRITICAL: TrainingPriority.HIGH,
+            SkillImportance.IMPORTANT: TrainingPriority.HIGH,
+            SkillImportance.PREFERRED: TrainingPriority.MEDIUM,
+            SkillImportance.NICE_TO_HAVE: TrainingPriority.LOW
         }
-        
-        total_weight = 0
-        readiness_sum = 0
-        
-        for gap in skill_gaps:
-            weight = severity_weights.get(gap.gap_severity, 0.5)
-            total_weight += weight
-            
-            # Calculate individual readiness (1.0 = no gap, 0.0 = maximum gap)
-            if gap.current_level is None:
-                individual_readiness = 0.2  # Assume some basic knowledge
-            else:
-                level_mapping = {'beginner': 1, 'intermediate': 2, 'advanced': 3, 'expert': 4}
-                current_score = level_mapping.get(gap.current_level, 1)
-                required_score = level_mapping.get(gap.required_level, 2)
-                individual_readiness = min(1.0, current_score / required_score)
-            
-            readiness_sum += individual_readiness * weight
-        
-        return readiness_sum / total_weight if total_weight > 0 else 0.5
+        return importance_to_priority_map.get(importance, TrainingPriority.MEDIUM)
+    
+    def _priority_sort_order(self, priority: TrainingPriority) -> int:
+        """Get sort order for priority (lower number = higher priority)"""
+        priority_order = {
+            TrainingPriority.HIGH: 0,
+            TrainingPriority.MEDIUM: 1,
+            TrainingPriority.LOW: 2
+        }
+        return priority_order.get(priority, 1)
+    
+    def _importance_sort_order(self, importance: SkillImportance) -> int:
+        """Get sort order for importance (lower number = higher importance)"""
+        importance_order = {
+            SkillImportance.CRITICAL: 0,
+            SkillImportance.IMPORTANT: 1,
+            SkillImportance.PREFERRED: 2,
+            SkillImportance.NICE_TO_HAVE: 3
+        }
+        return importance_order.get(importance, 2)
+    
+    async def _generate_simple_actions(self, skill: ExtractedSkill) -> List[str]:
+        """Generate simple action recommendations for a skill"""
+        actions = [
+            f"Learn {skill.name} fundamentals through online courses",
+            f"Practice {skill.name} with hands-on projects"
+        ]
+        if skill.category.lower() in ['programming', 'framework', 'language']:
+            actions.append(f"Build a project using {skill.name}")
+        return actions
+    
+    async def _suggest_simple_resources(self, skill: ExtractedSkill) -> List[str]:
+        """Generate simple learning resource suggestions"""
+        return [
+            f"Official {skill.name} documentation",
+            f"{skill.name} tutorials and courses",
+            f"Community forums and Stack Overflow"
+        ]
+    
+    def _define_simple_metrics(self, skill: ExtractedSkill) -> List[str]:
+        """Generate simple success metrics"""
+        return [
+            f"Complete a {skill.name} tutorial or course",
+            f"Build a functional project using {skill.name}"
+        ]
+    
+    def _estimate_duration_from_skill(self, skill: ExtractedSkill) -> str:
+        """Estimate training duration based on skill complexity"""
+        if skill.years_required and skill.years_required > 2:
+            return "3-6 months"
+        elif skill.category.lower() in ['programming', 'framework']:
+            return "2-4 months"
+        else:
+            return "1-2 months"
+    
+    def _estimate_difficulty_from_skill(self, skill: ExtractedSkill) -> DifficultyLevel:
+        """Estimate difficulty based on skill and experience requirements"""
+        if skill.years_required and skill.years_required > 3:
+            return DifficultyLevel.ADVANCED
+        elif skill.years_required and skill.years_required > 1:
+            return DifficultyLevel.INTERMEDIATE
+        else:
+            return DifficultyLevel.BEGINNER
     
     # Caching methods
     
@@ -828,24 +731,6 @@ class JobAnalysisService:
         else:
             return SkillImportance.NICE_TO_HAVE
     
-    def _calculate_skill_confidence(self, skill: ExtractedSkill) -> float:
-        """Calculate confidence score for extracted skill"""
-        # Base confidence from context clarity
-        confidence = 0.7
-        
-        # Increase if specific context provided
-        if skill.context and len(skill.context) > 20:
-            confidence += 0.1
-        
-        # Increase if years requirement specified
-        if skill.years_required is not None:
-            confidence += 0.1
-        
-        # Increase if importance is explicit
-        if skill.importance in ['critical', 'required', 'important']:
-            confidence += 0.1
-        
-        return min(1.0, confidence)
     
     async def _find_skill_synonyms(self, skill_name: str) -> List[str]:
         """Find synonyms for a skill name"""
@@ -917,7 +802,6 @@ class JobAnalysisService:
     def _determine_training_priority(
         self, 
         skill: ExtractedSkillEnhanced, 
-        skill_match: SkillMatch, 
         user_id: Optional[str]
     ) -> TrainingPriority:
         """Determine training priority for a skill"""
@@ -931,14 +815,13 @@ class JobAnalysisService:
     
     async def _generate_skill_actions(
         self, 
-        skill: ExtractedSkillEnhanced, 
-        skill_match: SkillMatch
+        skill: ExtractedSkillEnhanced
     ) -> List[str]:
         """Generate specific training actions for a skill"""
         actions = []
         
-        if skill_match.is_new_skill:
-            actions.append(f"Learn the fundamentals of {skill.name}")
+        # Always include fundamentals for comprehensive learning
+        actions.append(f"Learn the fundamentals of {skill.name}")
         
         if skill.skill_type == SkillType.PROGRAMMING:
             actions.extend([
