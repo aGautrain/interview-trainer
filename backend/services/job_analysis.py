@@ -22,8 +22,8 @@ from uuid import uuid4
 
 from database import fetch_all, fetch_one, execute, fetch_val
 from schemas.job_analysis import (
-    JobAnalysisRequest, JobAnalysisResponse, JobAnalysisResult,
-    SkillRecommendation, ExtractedSkillEnhanced, TrainingRecommendation,
+    JobAnalysisResponse, JobAnalysisResult,
+    SkillRecommendation,
     AnalysisStatus, SkillImportance, TrainingPriority,
     AnalysisMetrics
 )
@@ -69,7 +69,7 @@ class JobAnalysisService:
     
     async def analyze_job_description(
         self, 
-        request: JobAnalysisRequest
+        job_description: str
     ) -> JobAnalysisResponse:
         """
         Perform complete job description analysis.
@@ -96,8 +96,7 @@ class JobAnalysisService:
             llm_provider = await self._get_llm_provider()
             llm_response = await self._analyze_with_retry(
                 llm_provider, 
-                request.job_description, 
-                request.company_context
+                job_description
             )
             
             if not llm_response.success:
@@ -108,12 +107,12 @@ class JobAnalysisService:
             
             # Extract skills and generate unified skill recommendations
             job_analysis = JobAnalysis(**llm_response.data)
-            skill_recommendations = await self._generate_unified_skill_recommendations(job_analysis, request.user_id)
+            skill_recommendations = await self._generate_unified_skill_recommendations(job_analysis)
             
             # Build comprehensive result
             result = JobAnalysisResult(
-                job_title=job_analysis.job_title or request.job_title,
-                company_name=request.company_name,
+                job_title=job_analysis.job_title,
+                company_name="TODO",
                 industry=job_analysis.industry,
                 key_requirements=job_analysis.key_requirements,
                 skill_recommendations=skill_recommendations,
@@ -122,8 +121,6 @@ class JobAnalysisService:
                 role_summary=job_analysis.summary,
                 analysis_metadata={
                     "llm_provider": llm_provider.provider_name,
-                    "analysis_depth": request.analysis_depth,
-                    "skills_count": len(skill_recommendations)
                 }
             )
             
@@ -168,7 +165,7 @@ class JobAnalysisService:
         self, 
         text: str, 
         context_type: str = "job_description"
-    ) -> List[ExtractedSkillEnhanced]:
+    ) -> List[SkillRecommendation]:
         """
         Extract skills from any text content.
         
@@ -200,7 +197,7 @@ class JobAnalysisService:
         self, 
         analysis: JobAnalysisResult, 
         user_id: Optional[str] = None
-    ) -> List[TrainingRecommendation]:
+    ) -> List[SkillRecommendation]:
         """
         Generate training recommendations based on job analysis.
         
@@ -258,13 +255,13 @@ class JobAnalysisService:
     async def _enhance_extracted_skills(
         self, 
         job_analysis: JobAnalysis
-    ) -> List[ExtractedSkillEnhanced]:
+    ) -> List[SkillRecommendation]:
         """Convert and enhance LLM extracted skills"""
         enhanced_skills = []
         
         # Process technical skills
         for skill in job_analysis.technical_skills:
-            enhanced_skills.append(ExtractedSkillEnhanced(
+            enhanced_skills.append(SkillRecommendation(
                 name=skill.name,
                 category=skill.category,
                 skill_type=self._map_skill_type(skill.category),
@@ -277,7 +274,7 @@ class JobAnalysisService:
         
         # Process soft skills
         for skill in job_analysis.soft_skills:
-            enhanced_skills.append(ExtractedSkillEnhanced(
+            enhanced_skills.append(SkillRecommendation(
                 name=skill.name,
                 category=skill.category,
                 skill_type=SkillType.SOFT_SKILL,
@@ -293,12 +290,12 @@ class JobAnalysisService:
     async def _enhance_raw_skills(
         self, 
         skills: List[ExtractedSkill]
-    ) -> List[ExtractedSkillEnhanced]:
+    ) -> List[SkillRecommendation]:
         """Enhance raw extracted skills"""
         enhanced_skills = []
         
         for skill in skills:
-            enhanced_skills.append(ExtractedSkillEnhanced(
+            enhanced_skills.append(SkillRecommendation(
                 name=skill.name,
                 category=skill.category,
                 skill_type=self._map_skill_type(skill.category),
@@ -314,9 +311,9 @@ class JobAnalysisService:
     
     async def _generate_training_recommendations(
         self, 
-        extracted_skills: List[ExtractedSkillEnhanced],
+        extracted_skills: List[SkillRecommendation],
         user_id: Optional[str] = None
-    ) -> List[TrainingRecommendation]:
+    ) -> List[SkillRecommendation]:
         """Generate training recommendations based on extracted skills"""
         recommendations = []
         
@@ -333,7 +330,7 @@ class JobAnalysisService:
             # Generate specific recommendations
             recommended_actions = await self._generate_skill_actions(skill)
             
-            recommendation = TrainingRecommendation(
+            recommendation = SkillRecommendation(
                 skill_name=skill.name,
                 skill_category=skill.category,
                 priority=priority,
@@ -385,8 +382,7 @@ class JobAnalysisService:
     async def _create_skill_recommendation(
         self,
         skill: ExtractedSkill,
-        default_skill_type: SkillType,
-        user_id: Optional[str] = None
+        default_skill_type: SkillType
     ) -> SkillRecommendation:
         """Create a unified skill recommendation from extracted skill data"""
         
@@ -609,7 +605,7 @@ class JobAnalysisService:
     
     def _determine_training_priority(
         self, 
-        skill: ExtractedSkillEnhanced, 
+        skill: SkillRecommendation, 
         user_id: Optional[str]
     ) -> TrainingPriority:
         """Determine training priority for a skill"""
@@ -623,7 +619,7 @@ class JobAnalysisService:
     
     async def _generate_skill_actions(
         self, 
-        skill: ExtractedSkillEnhanced
+        skill: SkillRecommendation
     ) -> List[str]:
         """Generate specific training actions for a skill"""
         actions = []
@@ -652,7 +648,7 @@ class JobAnalysisService:
         
         return actions[:5]  # Limit to 5 actions
     
-    def _estimate_training_duration(self, skill: ExtractedSkillEnhanced) -> str:
+    def _estimate_training_duration(self, skill: SkillRecommendation) -> str:
         """Estimate training duration for a skill"""
         if skill.years_required and skill.years_required > 2:
             return "3-6 months"
@@ -661,7 +657,7 @@ class JobAnalysisService:
         else:
             return "2-4 weeks"
     
-    def _estimate_training_difficulty(self, skill: ExtractedSkillEnhanced) -> DifficultyLevel:
+    def _estimate_training_difficulty(self, skill: SkillRecommendation) -> DifficultyLevel:
         """Estimate training difficulty for a skill"""
         if skill.skill_type in [SkillType.SYSTEM_DESIGN, SkillType.ARCHITECTURE]:
             return DifficultyLevel.ADVANCED
@@ -670,7 +666,7 @@ class JobAnalysisService:
         else:
             return DifficultyLevel.BEGINNER
     
-    async def _suggest_learning_resources(self, skill: ExtractedSkillEnhanced) -> List[str]:
+    async def _suggest_learning_resources(self, skill: SkillRecommendation) -> List[str]:
         """Suggest learning resources for a skill"""
         resources = []
         
@@ -696,7 +692,7 @@ class JobAnalysisService:
         
         return resources[:3]  # Limit to 3 resources
     
-    def _define_success_metrics(self, skill: ExtractedSkillEnhanced) -> List[str]:
+    def _define_success_metrics(self, skill: SkillRecommendation) -> List[str]:
         """Define success metrics for learning a skill"""
         metrics = []
         

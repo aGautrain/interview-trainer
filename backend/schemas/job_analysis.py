@@ -39,23 +39,6 @@ class TrainingPriority(str, Enum):
     LOW = "low"
 
 
-class JobAnalysisRequest(BaseModel):
-    """Request model for job analysis"""
-    job_description: str = Field(..., description="Full job description text to analyze")
-    job_title: Optional[str] = Field(None, description="Job title for context")
-    company_name: Optional[str] = Field(None, description="Company name for context")
-    company_context: Optional[str] = Field(None, description="Additional company information")
-    analysis_depth: str = Field("standard", description="Analysis depth (basic, standard, comprehensive)")
-    user_id: Optional[str] = Field(None, description="User ID for personalized recommendations")
-    
-    @validator('analysis_depth')
-    def validate_analysis_depth(cls, v):
-        allowed_depths = ['basic', 'standard', 'comprehensive']
-        if v not in allowed_depths:
-            raise ValueError(f"Analysis depth must be one of {allowed_depths}")
-        return v
-
-
 class SkillRecommendation(BaseModel):
     """Unified skill extraction and training recommendation"""
     # Core skill information
@@ -105,10 +88,6 @@ class JobAnalysisResult(BaseModel):
     analysis_metadata: Dict[str, Any] = Field(default_factory=dict, description="Analysis metadata")
 
 
-# Backward compatibility aliases
-ExtractedSkillEnhanced = SkillRecommendation
-TrainingRecommendation = SkillRecommendation
-
 
 class JobAnalysisResponse(BaseModel):
     """Response wrapper for job analysis"""
@@ -132,4 +111,3 @@ class AnalysisMetrics(BaseModel):
     avg_processing_time_ms: Optional[float] = Field(None, description="Average processing time")
     total_tokens_used: int = Field(default=0, description="Total tokens consumed")
     most_analyzed_skills: List[Dict[str, Any]] = Field(default_factory=list, description="Most frequently analyzed skills")
-

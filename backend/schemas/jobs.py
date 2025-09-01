@@ -25,6 +25,11 @@ class Job(BaseModel):
     updatedAt: str = Field(..., description="Last update date")
 
 
+class JobCreateRequest(BaseModel):
+    """Request model for creating a job from description only"""
+    description: str = Field(..., min_length=10, description="Job description to analyze and create job from")
+
+
 class JobWithAnalyzedSkills(BaseModel):
     """Job with populated skills from analysis"""
     id: str = Field(..., description="Unique identifier")

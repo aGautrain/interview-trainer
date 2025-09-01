@@ -81,3 +81,51 @@ async def fetch_val(query: str, *args) -> Any:
     """Execute a query and return a single value"""
     async with get_db_connection() as conn:
         return await conn.fetchval(query, *args)
+
+
+async def execute_transaction(queries: List[tuple]) -> List[Any]:
+    """
+    Execute multiple queries in a single transaction.
+    
+    Args:
+        queries: List of tuples where each tuple is (query_string, *args)
+        
+    Returns:
+        List of results from each query
+        
+    Raises:
+        Exception: If any query fails, the entire transaction is rolled back
+    """
+    async with get_db_connection() as conn:
+        async with conn.transaction():
+            results = []
+            for query_info in queries:
+                if len(query_info) == 1:
+                    query = query_info[0]
+                    args = ()
+                else:
+                    query = query_info[0]
+                    args = query_info[1:]
+                
+                # Determine query type and execute appropriately
+                query_lower = query.strip().lower()
+                if query_lower.startswith(('select',)):
+                    if 'limit 1' in query_lower or 'fetch_one' in query.lower():
+                        result = await conn.fetchrow(query, *args)
+                        results.append(dict(result) if result else None)
+                    else:
+                        rows = await conn.fetch(query, *args)
+                        results.append([dict(row) for row in rows])
+                elif query_lower.startswith(('insert', 'update', 'delete')):
+                    if 'returning' in query_lower:
+                        result = await conn.fetchrow(query, *args)
+                        results.append(dict(result) if result else None)
+                    else:
+                        result = await conn.execute(query, *args)
+                        results.append(result)
+                else:
+                    # Default to fetchval for other queries
+                    result = await conn.fetchval(query, *args)
+                    results.append(result)
+            
+            return results
