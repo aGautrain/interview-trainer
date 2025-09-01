@@ -1,7 +1,6 @@
 from typing import List, Optional, Any
 from pydantic import BaseModel, Field
 from .base import Skill
-from .jobs import JobAnalysisResult, JobAnalysisForm
 
 
 class QuestionGenerationRequest(BaseModel):

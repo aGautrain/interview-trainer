@@ -24,9 +24,7 @@ from .training import (
 
 # Job schemas
 from .jobs import (
-    Job,
-    JobAnalysisResult,
-    JobAnalysisForm
+    Job
 )
 
 # Dashboard schemas
@@ -75,7 +73,6 @@ __all__ = [
     # Jobs
     "Job",
     "JobAnalysisResult",
-    "JobAnalysisForm",
     
     # Dashboard
     "DashboardStats",
